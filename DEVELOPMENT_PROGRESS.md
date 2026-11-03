@@ -1,9 +1,9 @@
 # HeartGuard AI: Development Progress & Project Ledger
 
-**Current Status**: Week 1 Complete (Post-Scientific Audit & Reconciliation)  
+**Current Status**: Week 1 Complete (Final Scientific Audit Applied)  
 **Current Milestone**: Milestone 1 — Research Foundation, Literature Verification, System Design & Architecture  
 **Developer Commitment**: 6–8 hours/week (1 flexible working day per week)  
-**Last Updated**: November 2026 (Comprehensive Scientific Audit Applied)
+**Last Updated**: November 2026 (Final Scientific Audit Pass)
 
 ---
 
@@ -56,20 +56,25 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 3. **Common Reduced Diagnostic Set (10-Feature vs. 9-Feature Variants)**:
    - *Decision*: Adopt the standardized designation "Common Reduced Diagnostic Set", explicitly separating the 10-feature variant (with cholesterol, evaluated on Hungary and Long Beach VA with Cleveland-median imputation) from the 9-feature variant (without cholesterol, evaluated across all sites including Switzerland where cholesterol is 100% missing).
    - *Rationale*: Avoids manufacturing synthetic laboratory values on entire unmeasured cohorts while maintaining rigorous cross-center comparability.
-4. **Unverified Status for Framingham Educational CSV and Statlog Duplication**:
+4. **Separate Model Training per Feature Configuration**:
+   - *Decision*: Full Diagnostic (13 features), Common Reduced (10 features), and Common Reduced (9 features) are trained, tuned, and calibrated as three completely separate, independent pipelines on Cleveland before being frozen.
+   - *Rationale*: Models must learn optimal decision boundaries on their native feature subspace rather than having features dropped post-hoc at test time.
+5. **Unverified Status for Framingham Educational CSV and Statlog Duplication**:
    - *Decision*: Mark Framingham 4,240-row educational CSV provenance and usage rights as unverified until confirmed. Keep Statlog duplicate status unverified pending Week 2 programmatic row-hash matching.
    - *Rationale*: Maintains strict scientific honesty and avoids unsupported assertions.
-5. **Single Coherent Internal Validation Strategy**:
+6. **Single Coherent Internal Validation Strategy**:
    - *Decision*: Use Repeated Stratified 5-Fold Cross-Validation (10 repeats, 50 splits) on the entire Cleveland cohort ($N=303$) with non-parametric bootstrap confidence intervals. Remove the confusing 20% internal holdout.
    - *Rationale*: Maximizes training sample efficiency and avoids underpowered validation splits.
-6. **Cross-Fitted Probability Calibration**:
-   - *Decision*: Implement probability calibration via out-of-fold cross-fitting (`CalibratedClassifierCV(cv=5)`) to eliminate optimistic calibration bias.
-7. **Modality-Specific Preprocessing & SMOTE Constraint**:
+7. **Cross-Fitted Probability Calibration with Modern API**:
+   - *Decision*: Implement probability calibration using `CalibratedClassifierCV(estimator=model, cv=5)`. Evaluate calibration strictly on out-of-fold validation predictions to prevent optimistic bias.
+8. **Modality-Specific Preprocessing & SMOTE Constraint**:
    - *Decision*: Numeric continuous features are median-imputed and scaled; categorical features are mode-imputed and one-hot encoded; binary features are preserved. Ordinary SMOTE after one-hot encoding is strictly prohibited; cost-sensitive class weighting is prioritized, with SMOTENC restricted to exploratory training-fold runs.
-8. **Explainability Grounding (TreeSHAP Margin vs. Calibrated Probabilities)**:
-   - *Decision*: TreeSHAP explains the base model's raw margin / log-odds space (where additivity holds exactly); explain how strictly monotonic Platt scaling preserves feature direction and rank ordering.
-9. **ECG Scope Boundary**:
-   - *Decision*: ECG is strictly limited to discrete tabular clinical features (`restecg`, `oldpeak`, `slope`). Waveform signal processing or file uploads are out of scope and deferred until after Week 2.
+9. **Explainability Grounding (TreeSHAP Margin vs. Calibrated Probabilities)**:
+   - *Decision*: TreeSHAP explains the base model's raw margin / log-odds space (where additivity holds exactly); acknowledge that non-linear sigmoid calibration does not preserve exact feature attribution rankings or signs in probability space.
+10. **OOD Threshold Selection Boundary (Cleveland Only)**:
+    - *Decision*: OOD distance cutoffs must be determined strictly from Cleveland training/validation data, and never tuned or adjusted using external hospital cohorts.
+11. **ECG Scope Boundary**:
+    - *Decision*: ECG is strictly limited to discrete tabular clinical features (`restecg`, `oldpeak`, `slope`). Waveform signal processing or file uploads are out of scope and deferred until after Week 2.
 
 ---
 
@@ -108,24 +113,26 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 ### Audit Corrections Applied Across Project Documentation:
 1. **10-Feature vs. 9-Feature Reconciliation**: Clearly distinguished the 10-feature variant (with cholesterol) and 9-feature variant (without cholesterol) of the "Common Reduced Diagnostic Set" in `DATASET_DOCUMENTATION.md` and `RESEARCH_METHODOLOGY.md`.
-2. **Removed Unsupported Claims**: Stripped speculative historical explanations for missingness (e.g., admission protocols, surgical triage narratives). Recorded only official facts from Detrano et al. (1989) and noted that exact institutional reasons are unrecorded.
+2. **Removed Unsupported Claims on Missingness**: Stripped speculative historical explanations for missingness (e.g., admission protocols, surgical triage narratives, data extraction omissions). Recorded only official facts from Detrano et al. (1989) and noted that exact institutional reasons are unrecorded.
 3. **Framingham Provenance & Licensing**: Explicitly marked the extraction pipeline, cohort slice, and usage rights of the 4,240-row educational CSV as unverified pending confirmation.
 4. **Statlog Duplicate Status**: Kept duplicate concordance unverified pending Week 2 programmatic row-hash verification.
 5. **Terminology Uniformity**: Replaced "Core Bedside Set" with "Common Reduced Diagnostic Set" across all documents.
 6. **Corrected Clinical Feature Semantics**: Accurately defined `fbs` as a binary thresholded indicator ($>120\text{ mg/dL}$), and verified clinical semantics for `cp`, `restecg`, `oldpeak`, `slope`, `ca`, and `thal`.
 7. **Single Coherent Internal Validation Strategy**: Adopted Repeated Stratified 5-Fold CV (10 repeats, 50 splits) on Cleveland, removing the confusing 20% internal holdout.
-8. **Cross-Fitted Calibration**: Formulated `CalibratedClassifierCV(cv=5)` to fit calibrators strictly on out-of-fold validation predictions.
+8. **Scikit-Learn API & Cross-Fitted Calibration**: Formulated `CalibratedClassifierCV(estimator=model, cv=5)` using the modern API; documented the exact cross-fitting procedure and enforced that calibration is evaluated strictly on predictions from observations not used to fit the corresponding base estimator or calibrator.
 9. **Modality-Specific Preprocessing & SMOTE Guardrail**: Specified median imputation + scaling for numeric, mode imputation + one-hot encoding for categorical, and mode imputation + passthrough for binary. Prohibited ordinary SMOTE after one-hot encoding; preferred cost-sensitive class weighting and restricted SMOTENC to exploratory training folds.
 10. **Clean Model Hyperparameter Grids**: Specified consistent, regularized search spaces across all 10 algorithms.
 11. **Frozen Decision Thresholds**: Pre-specified Youden's $J$ threshold optimization on Cleveland out-of-fold predictions and froze $\tau^*$ before zero-shot external evaluation.
-12. **Fairness Impossibility Theorem**: Cited Kleinberg et al. (2016/2017 [REF-16b]) and Rajkomar et al. (2018 [REF-16]) proving the mathematical impossibility of simultaneous Equalized Odds and Predictive Parity under unequal prevalence.
-13. **Clarified TreeSHAP vs. Calibrated Output**: Documented that TreeSHAP computes exact attributions in base log-odds space, and explained how monotonic Platt scaling preserves attribution directions and rank ordering.
-14. **Separation of Primary vs. Exploratory Analyses**: Formally partitioned pre-specified confirmatory benchmarks from exploratory analyses (SMOTENC, threshold sensitivity, OOD cutoffs).
+12. **Rigorous Kleinberg et al. Impossibility Theorem**: Accurately described the specific theorem in Kleinberg, Mullainathan, & Raghavan (2016/2017 [REF-16b]), proving that calibration within groups, balance for the positive class, and balance for the negative class cannot simultaneously hold under unequal prevalence unless prediction is perfect; avoided overgeneralizing to every arbitrary fairness metric combination.
+13. **TreeSHAP Raw Margin vs. Calibrated Output Correction**: Corrected the mathematical claim: TreeSHAP computes exact attributions in base model log-odds space, but these attributions do not automatically preserve signs or rank-orderings in probability space due to the non-linear sigmoid transformation. Clearly distinguished base-model explanations from post-calibration probabilities.
+14. **Statistical Uncertainty Methodology**: Documented that 50 repeated CV folds are statistically correlated and cannot be treated as independent observations; specified patient-level non-parametric bootstrap CIs ($B=1,000$); barred DeLong testing on pooled repeated-CV predictions; and documented the wide variance and limitations of CIs on small demographic subgroups.
+15. **OOD Threshold Selection Boundary (Cleveland Only)**: Mandated that OOD distance cutoffs must be determined strictly from Cleveland training/validation data, and never tuned or adjusted using external hospital cohorts.
+16. **Separate Training of Feature Configurations**: Mandated that Full Diagnostic (13 features), Common Reduced (10 features), and Common Reduced (9 features) are trained, tuned, and calibrated as three completely separate, independent pipelines on Cleveland before being frozen.
 
 ### Outstanding Scientific Questions for Week 2:
 - **Q1 (Statlog Duplication Concordance)**: Exactly how many of Statlog's 270 rows match Cleveland's 303 rows under feature tolerance matching, and how are missing values in Cleveland represented in Statlog?
-- **Q2 (Non-Random Missingness Handling in Switzerland)**: In the Swiss dataset, cholesterol is recorded as 0 across all 123 rows (clinical omission, not true zero cholesterol). When evaluating the frozen Cleveland model zero-shot, how sensitive is model discrimination to imputing Cleveland's training median versus evaluating the 9-feature model that omits cholesterol?
-- **Q3 (OOD Threshold Tuning via Natural Dataset Shift)**: Does a 99th percentile $\chi^2$ cutoff on continuous features produce acceptable false-alarm rates on held-out Cleveland validation folds, or does it require empirical thresholding based on the natural distribution shift observed in the Hungarian cohort?
+- **Q2 (Non-Random Missingness Handling in Switzerland)**: In the Swiss dataset, cholesterol is recorded as 0 across all 123 rows. The underlying cause is not documented in the archival literature and remains unverified. When evaluating the frozen Cleveland models zero-shot, how does the 10-feature model with Cleveland-median cholesterol imputation compare empirically to the 9-feature model that omits cholesterol?
+- **Q3 (OOD False-Alarm Rate on Cleveland Folds)**: What is the empirical false-positive rejection rate of the 99th percentile Cleveland-derived Ledoit-Wolf Mahalanobis distance cutoff when evaluated on out-of-fold Cleveland patients, and what proportion of external hospital patients (Hungary, Long Beach, Switzerland) are flagged as out-of-distribution?
 - **Q4 (Framingham Educational CSV License Confirmation)**: What are the formal data transfer terms and licensing constraints governing the 4,240-row educational teaching dataset?
 
 ---

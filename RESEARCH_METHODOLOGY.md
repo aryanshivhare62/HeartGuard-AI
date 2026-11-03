@@ -112,23 +112,52 @@ HeartGuard AI benchmarks 10 diverse classification architectures spanning linear
   [10- & 9-Feature]   [10- & 9-Feature]    [9-Feature Set]
 ```
 
-### 3.1 Primary Internal Validation Strategy (Repeated Stratified 5-Fold CV)
-- **Elimination of Confusing 20% Holdout**: Carving out a single 20% holdout ($N \approx 60$) from a total sample of $N=303$ leaves only $\sim 28$ positive cases in the test split, causing high sample variance and wasting statistical power.
-- **Adopted Protocol**: Repeated Stratified 5-Fold Cross-Validation (10 repeats, 50 distinct train/validation splits) on the entire Cleveland cohort.
-- **Hyperparameter Optimization**: Tuned within each training fold using an internal 3-fold cross-validation grid/randomized search. Parameter search grids are constrained with strong regularization to prevent fold overfitting.
-- **Statistical Uncertainty**: Performance metrics are aggregated across all 50 splits, reporting the mean, standard deviation, and empirical $95\%$ non-parametric bootstrap confidence intervals ($B=1,000$ resamples).
+### 3.1 Primary Internal Validation Strategy & Statistical Uncertainty
 
-### 3.2 External Zero-Shot Transfer Protocol
-- **Frozen Model Execution**: The final production model is fit on the full Cleveland derivation cohort (with cross-fitted calibration).
-- **No External Adaptation**: When evaluating on Hungary, Switzerland, and Long Beach VA:
-  - No hyperparameters are re-tuned.
-  - No features are re-selected.
-  - No calibrators are re-fit.
-  - No decision thresholds are re-optimized.
-- **Evaluation Across Configurations**:
-  - *Full Diagnostic Set (13 features)*: Internal Cleveland benchmark only.
-  - *Common Reduced Diagnostic Set (10 features)*: Zero-shot on Hungary and Long Beach VA (handling missing cholesterol via Cleveland training median).
-  - *Common Reduced Diagnostic Set (9 features)*: Zero-shot across all sites, specifically evaluating Switzerland where cholesterol was unmeasured.
+#### 1. Internal Validation Protocol on Cleveland ($N=303$):
+- **Elimination of Confusing 20% Holdout**: Carving out a single 20% holdout ($N \approx 60$) from a small dataset of $N=303$ leaves only $\sim 28$ positive events in the test split, causing high estimator variance and wasting precious sample size.
+- **Adopted Protocol**: Repeated Stratified 5-Fold Cross-Validation (10 repeats, total 50 distinct train/validation splits) on the complete Cleveland derivation cohort.
+- **Hyperparameter Optimization**: Tuned strictly within the training fold of each split (using internal 3-fold cross-validation or randomized search). Parameter grids are heavily regularized to prevent fold overfitting.
+
+#### 2. Rigorous Statistical Uncertainty Reporting:
+- **Non-Independence of Repeated CV Folds**: The 50 fold-level metric results across repeated cross-validation are **statistically dependent and correlated** because folds share training and validation instances across repeats. Therefore, treating the 50 fold scores as independent observations (e.g., dividing sample standard deviation by $\sqrt{50}$ to report standard error, or conducting naive Student's t-tests) is statistically invalid and severely underestimates uncertainty.
+- **Patient-Level Non-Parametric Bootstrap CIs**: To report valid confidence intervals, bootstrap resampling must be performed at the **patient observation level**:
+  - Resample the patient cohort ($N=303$) with replacement $B=1,000$ times.
+  - On each bootstrap resample, evaluate model predictions and compute the evaluation metric.
+  - The empirical 95% confidence interval is extracted using the percentile method ($2.5^{\text{th}}$ and $97.5^{\text{th}}$ percentiles).
+- **DeLong Test Application Boundary**: DeLong's test for comparing ROC curves (DeLong et al., 1988) strictly assumes independent patient observations. **DeLong testing must NEVER be applied to predictions pooled across repeated cross-validation folds**, as repeated predictions for the same patient violate sample independence. DeLong's test is restricted exclusively to comparing competing models on a single fixed cohort (e.g., on a single holdout split or on an external validation dataset).
+- **Limitations of Small Subgroup Confidence Intervals**: When evaluating demographic subgroups with very small sample sizes (e.g., female subgroup in Cleveland with $N=97$ and only $\sim 25$ events, or external Switzerland females with $N=10$), bootstrap confidence intervals become extremely wide, unstable, and sensitive to boundary effects. Subgroup metrics must always be reported alongside exact sample sizes ($N$) and event counts ($E$), and interpreted with documented caution.
+
+---
+
+### 3.2 External Zero-Shot Transfer Protocol (Strictly Frozen)
+
+```
+       CLEVELAND DERIVATION COHORT (N=303)
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+   Model 1 (Full)   Model 2 (10-Feat) Model 3 (9-Feat)
+   13 Predictors    10 Predictors    9 Predictors
+   [Trained Sep.]   [Trained Sep.]   [Trained Sep.]
+        │                │                │
+   [Freeze All]     [Freeze All]     [Freeze All]
+        │                │                │
+        ▼                ▼                ▼
+   Cleveland CV     Zero-Shot on     Zero-Shot on
+   Benchmark Only   Hungary & VA     All 3 External Sites
+                    (Hungary N=294,  (Specifically
+                     Long Beach 200)  Switzerland N=123)
+```
+
+- **Independent Model Training per Configuration**:
+  - The three feature configurations—**Full Diagnostic (13 features)**, **Common Reduced (10 features, with cholesterol)**, and **Common Reduced (9 features, without cholesterol)**—are **trained and tuned as three completely separate, independent pipelines on Cleveland**.
+  - A 10-feature model is trained strictly on Cleveland using only those 10 features; its preprocessing scaler, hyperparameters, calibrator, and decision threshold are optimized exclusively on that 10-dimensional space.
+  - Similarly, the 9-feature model is trained strictly on Cleveland using only those 9 features.
+  - Models never drop features post-hoc at test time from a 13-feature model.
+- **Strictly Frozen Zero-Shot Execution**:
+  - No hyperparameters, features, calibrators, decision thresholds, or OOD cutoffs are modified or re-tuned on external datasets.
+  - Performance drops ($\Delta\text{ROC-AUC}$, $\Delta\text{PR-AUC}$, $\Delta\text{Brier}$) are computed as unadjusted empirical generalization gaps.
 
 ---
 
@@ -172,71 +201,103 @@ We report 12 complementary metrics, strictly separating **discrimination** (abil
 
 ## 6. Cross-Fitted Probability Calibration Protocol
 
-To achieve **Moderate Calibration** ([REF-09], Van Calster et al., 2016):
-1. **Cross-Fitted Post-Hoc Calibrators**:
-   - Implemented via `CalibratedClassifierCV(base_estimator, cv=5, method='sigmoid' | 'isotonic')`.
-   - The base classifier is fit on training subsets, and calibrator parameters (Platt logistic parameters $a, b$ or isotonic step functions) are fit on out-of-fold predictions.
-2. **Platt Scaling (Sigmoid)**:
-   - Parametric logistic recalibration: $\hat{p}_{\text{cal}} = \frac{1}{1 + \exp(-(a \cdot \text{logit}(\hat{p}) + b))}$. Robust and resistant to overfitting on small validation samples ($N \approx 60$).
-3. **Isotonic Regression**:
-   - Monotonic step-wise non-parametric fitting. Highly flexible, but susceptible to step-interval overfitting on small clinical datasets.
-4. **External Deployment**:
-   - The final calibrator fit on Cleveland out-of-fold predictions is frozen and evaluated zero-shot on external datasets.
+To achieve **Moderate Calibration** ([REF-09], Van Calster et al., 2016) without data leakage:
+
+### 6.1 Scikit-Learn API & Exact Cross-Fitting Procedure
+- **Scikit-Learn API Implementation**:
+  In current scikit-learn releases ($\ge 1.2$, updated in 1.4+), probability calibration is parameterized using `estimator` (replacing the deprecated `base_estimator`):
+  ```python
+  from sklearn.calibration import CalibratedClassifierCV
+  
+  calibrated_clf = CalibratedClassifierCV(
+      estimator=base_estimator,
+      method='sigmoid',  # or 'isotonic'
+      cv=5
+  )
+  ```
+- **Cross-Fitting Mechanism**:
+  When `cv=5`, `CalibratedClassifierCV` partitions the training data into 5 folds. For each fold $k \in \{1,\dots,5\}$:
+  1. The `base_estimator` is fit on the remaining 4 folds (80% of data).
+  2. Uncalibrated predictions are generated for the held-out $k^{\text{th}}$ fold (20% of data).
+  3. A calibrator mapping (Platt logistic regression or isotonic step function) is fit strictly on those out-of-fold predictions.
+  4. At inference time, the ensemble averages the calibrated probabilities across all 5 fold models: $\hat{p}(x) = \frac{1}{5} \sum_{k=1}^5 \hat{p}_k(x)$.
+- **Strict Out-of-Fold Calibration Evaluation Rule**:
+  When evaluating whether a model is properly calibrated on the Cleveland cohort, predicted probabilities must be generated strictly from observations **not** used to fit the corresponding base estimator or calibrator (e.g., using `cross_val_predict(..., method='predict_proba')`). Evaluating calibration on in-sample training predictions yields spuriously low Brier scores and falsely ideal calibration curves.
+- **External Evaluation**:
+  The final `CalibratedClassifierCV` ensemble fit on Cleveland is exported and applied zero-shot to external cohorts without recalibration.
 
 ---
 
 ## 7. Explainability Methodology (TreeSHAP vs. Calibrated Output)
 
-1. **Mathematical Grounding of TreeSHAP**:
-   - TreeSHAP ([REF-12], Lundberg et al., 2018) computes exact Shapley attributions in polynomial time on the **base tree ensemble's raw output (margin / log-odds space)**:
-     $$\text{margin}(x) = \phi_0 + \sum_{i=1}^M \phi_i(x)$$
-   - In margin space, the efficiency and additivity axioms hold exactly.
-2. **Impact of Post-Hoc Calibration on SHAP Attributions**:
-   - When Platt scaling ($\hat{p} = \sigma(a \cdot \text{margin} + b)$) is appended to a tree model, the scaling function is **strictly monotonic**.
-   - Consequently, the sign (positive vs. negative risk contribution) and relative rank-ordering of feature attributions are mathematically preserved from margin space.
-   - For individual patient explanations, waterfall plots display attributions in base log-odds space with a secondary axis indicating monotonic calibrated risk percentage.
-3. **Clinical Interpretation Disclaimer**:
-   - Every SHAP output explicitly carries the statement:
-     > *"SHAP values quantify algorithmic associations within the model, not biological causes. Features flagged as high-risk reflect observed statistical patterns, not therapeutic levers."*
+### 7.1 Mathematical Grounding of TreeSHAP in Raw Margin Space
+TreeSHAP ([REF-12], Lundberg et al., 2018) calculates exact Shapley attributions in polynomial time on the **raw output space of the base tree ensemble (log-odds / margin space)**:
+$$\text{margin}(x) = \phi_0 + \sum_{i=1}^M \phi_i(x)$$
+In this uncalibrated margin space, the fundamental game-theoretic axioms (Efficiency, Symmetry, Dummy, and Additivity) hold exactly.
+
+### 7.2 Non-Equivalence in Calibrated Probability Space
+> [!IMPORTANT]
+> **Mathematical Correction on Calibration and Feature Attributions**:  
+> A common misconception in applied machine learning is that because Platt scaling $\hat{p} = \sigma(a \cdot \text{margin} + b)$ is a monotonic function, TreeSHAP attributions computed in margin space automatically preserve feature attribution signs or proportional rankings in probability space. **This is mathematically incorrect**:
+> 1. *Non-Linearity*: The sigmoid transformation $\sigma(z) = \frac{1}{1 + \exp(-z)}$ is non-linear; its derivative $\sigma'(z) = \sigma(z)(1 - \sigma(z))$ varies from near zero in the tails to $0.25$ at the center.
+> 2. *Context-Dependent Marginal Effects*: In probability space, the marginal change in predicted probability attributable to feature $i$ depends heavily on the cumulative sum of all other features (i.e., where the patient is located along the sigmoid curve). A feature with a large positive attribution in log-odds space may produce a negligible change in probability if the patient is already deep in the saturated tail ($\hat{p} \approx 0.98$).
+> 3. *Attribution Re-ranking*: Because of non-linear saturation, computing Shapley values directly on the composite function $\sigma(f(x))$ can alter the relative rank-ordering of feature importances compared to margin-space TreeSHAP.
+
+### 7.3 HeartGuard AI Implementation Strategy
+- **Primary Attribution Framework**: TreeSHAP waterfall and beeswarm plots are computed and presented in the **base model's uncalibrated log-odds (margin) space**, where additivity is exact and theoretically grounded.
+- **Clinical Interface Presentation**: The user interface displays the exact raw log-odds contributions $\phi_i$, accompanied by an explicit clinical banner:
+  > *"Feature attributions are computed in the base model's log-odds score space before non-linear calibration. Positive values indicate features that push the model toward higher cardiovascular risk; negative values indicate features that reduce risk. These attributions represent statistical associations within the retrospective model, not biological causes or direct probability percentages."*
+- **Model-Agnostic Probability Explanations**: If explanations directly on the calibrated probability $\hat{p} \in [0, 1]$ are required, they are computed using model-agnostic KernelSHAP on the calibrated pipeline and explicitly designated as approximations.
 
 ---
 
-## 8. Subgroup Fairness & Inherent Trade-Offs
+## 8. Subgroup Fairness & Theoretical Inherent Trade-Offs
 
-### 8.1 Theoretical Grounding in Fairness Impossibility
-As proved by **Kleinberg, Mullainathan, & Raghavan (2016/2017 [REF-16b])** and **Rajkomar et al. (2018 [REF-16])**:
-- If baseline disease prevalence differs between two demographic subgroups (in Cleveland: male prevalence $\approx 55.3\%$, female prevalence $\approx 25.8\%$), **it is mathematically impossible for a non-perfect prediction model to satisfy both Equalized Odds (equal TPR and FPR) and Predictive Parity (equal PPV/Precision) simultaneously**.
-- Attempting to force equal prediction rates (Demographic Parity) across groups with differing underlying true disease rates guarantees clinical harm through false-positive overtreatment in low-prevalence groups or false-negative underdiagnosis in high-prevalence groups.
+### 8.1 Rigorous Formulation of Kleinberg et al.'s Impossibility Theorem
+HeartGuard AI grounds its fairness evaluation in the landmark impossibility theorem proved by **Kleinberg, Mullainathan, & Raghavan (2016/2017 [REF-16b])**:
+- Consider a continuous risk score $R \in [0, 1]$ and a binary outcome $Y \in \{0, 1\}$ evaluated across demographic groups $A \in \{1, 2\}$ with differing baseline disease prevalence ($p_1 \neq p_2$, as observed between males [$\approx 55\%$] and females [$\approx 26\%$] in the Cleveland cohort).
+- Kleinberg et al. investigated three specific, commonly desired fairness conditions:
+  1. **Calibration within groups**: For each group $a$ and each score value $r$, $P(Y=1 \mid R=r, A=a) = r$.
+  2. **Balance for the positive class**: The average score assigned to subjects with $Y=1$ is equal across groups ($\mathbb{E}[R \mid Y=1, A=1] = \mathbb{E}[R \mid Y=1, A=2]$, equivalent to equal False Negative Rates / Equal Opportunity at fixed thresholds).
+  3. **Balance for the negative class**: The average score assigned to subjects with $Y=0$ is equal across groups ($\mathbb{E}[R \mid Y=0, A=1] = \mathbb{E}[R \mid Y=0, A=2]$, equivalent to equal False Positive Rates at fixed thresholds).
+- **The Theorem**: If baseline group prevalence rates differ ($p_1 \neq p_2$), **no risk score can simultaneously satisfy calibration within groups, balance for the positive class, and balance for the negative class**, unless the score achieves perfect deterministic accuracy (assigning $R \in \{0, 1\}$ with zero prediction error).
+- **Academic Precision Rule**: We do not misrepresent this theorem as proving that every arbitrary pair of fairness metrics is mutually incompatible; rather, it specifically proves the inherent mathematical conflict between probability calibration within groups and error-rate parity across groups when base prevalence differs.
 
 ### 8.2 Disaggregated Subgroup Audit Protocol
-Rather than attempting contradictory mathematical parity optimization, HeartGuard AI executes a rigorous **transparency audit**:
-- Metrics (Sensitivity, Specificity, PPV, Brier score, Calibration slope) are reported disaggregated by:
-  - Biological Sex: Female ($N=97$) vs. Male ($N=206$).
-  - Age Categories: Younger ($<50$ years), Middle ($50–65$ years), Older ($>65$ years).
-- We report the observed Equalized Odds gap $|\Delta\text{TPR}| + |\Delta\text{FPR}|$ without enforcing artificial equality that degrades clinical safety.
+Because forcing error-rate balance artificially distorts probability calibration (and vice versa), HeartGuard AI rejects naive "fairness optimization" that could induce clinical miscalibration. Instead, we implement **transparent disaggregated reporting**:
+- Report Sensitivity, Specificity, Positive Predictive Value, Brier score, and Calibration slope disaggregated by:
+  - Biological Sex: Female ($N=97$, $E=25$) vs. Male ($N=206$, $E=114$).
+  - Age Categories: Younger ($<50$), Middle ($50–65$), Older ($>65$).
+- Explicitly document sample size ($N$) and event count ($E$) alongside wide bootstrap confidence intervals for small subgroups, cautioning against over-interpreting underpowered stratum metrics.
 
 ---
 
-## 9. Out-of-Distribution (OOD) Detection Methodology & Limitations
+## 9. Out-of-Distribution (OOD) Detection Methodology & Threshold Rules
 
 ### 9.1 Formulation with Regularized Ledoit-Wolf Shrinkage
-To detect patient vectors outside the supported clinical training distribution:
+To detect patient vectors lying outside the supported training distribution:
 $$D^2(x) = (x - \hat{\mu})^T \hat{\Sigma}_{\text{shrink}}^{-1} (x - \hat{\mu})$$
-- $\hat{\mu}$ and $\hat{\Sigma}_{\text{shrink}}$ are computed using **Ledoit-Wolf shrinkage** (`sklearn.covariance.LedoitWolf`) strictly on the training fold's standardized continuous features (`age`, `trestbps`, `chol`, `thalach`, `oldpeak`).
-- Shrinkage stabilizes the empirical covariance matrix against collinearity and small sample size, ensuring well-conditioned matrix inversion.
+- $\hat{\mu}$ and $\hat{\Sigma}_{\text{shrink}}$ are computed using **Ledoit-Wolf shrinkage** (`sklearn.covariance.LedoitWolf`) strictly on the standardized continuous features (`age`, `trestbps`, `chol`, `thalach`, `oldpeak`) of the **Cleveland derivation cohort**.
+- Shrinkage stabilizes the empirical covariance against collinearity, ensuring well-conditioned matrix inversion.
 
-### 9.2 Methodological Limitations
-1. **Normality Assumption**: Mahalanobis distance assumes multivariate Gaussianity. Categorical and binary features are excluded from the metric to avoid violating distributional assumptions.
-2. **Prediction Entropy Overconfidence**: Predictive Shannon entropy $H(\hat{p}) = - \sum \hat{p}_c \log_2 \hat{p}_c$ can be deceptively low (overconfident) for tree ensembles and neural networks on out-of-domain inputs. It is reported strictly as an auxiliary diagnostic.
-3. **Empirical Evaluation**: OOD detection is evaluated empirically by testing its capacity to separate held-out Cleveland cases from natural demographic shifts (Hungary, Long Beach VA, Switzerland) and synthetic extreme vectors (e.g., blood pressure $> 250\text{ mmHg}$).
+### 9.2 Strict Rule on Threshold Selection (Cleveland Only)
+> [!CAUTION]
+> **OOD Threshold Selection Boundary**:  
+> The critical threshold for flagging an input as out-of-distribution (e.g., the 95th or 99th percentile $\chi^2$ cutoff) **must be determined strictly from the Cleveland training/validation data**.  
+> **Under no circumstances will OOD thresholds be tuned, calibrated, or adjusted using the external cohorts (Hungary, Switzerland, or Long Beach VA).**  
+> External datasets serve exclusively as natural-shift test cases to evaluate how frequently the frozen Cleveland-derived threshold flags external patient populations.
+
+### 9.3 Methodological Limitations of OOD Detection
+1. **Normality Assumption**: Mahalanobis distance assumes that the continuous features follow a multivariate Gaussian distribution. Categorical (`cp`, `restecg`, `slope`, `thal`) and binary (`sex`, `fbs`, `exang`) variables are excluded from the Mahalanobis calculation to avoid distributional invalidity.
+2. **Prediction Entropy Overconfidence**: Predictive Shannon entropy $H(\hat{p}) = - \sum \hat{p}_c \log_2 \hat{p}_c$ can be deceptively low (overconfident) for tree ensembles and neural networks on out-of-domain inputs. Entropy is treated strictly as an auxiliary diagnostic, never as a primary OOD detector.
 
 ---
 
 ## 10. Separation of Confirmatory vs. Exploratory Analyses
 
-To prevent data dredging and post-hoc rationalization, all experimental tasks are partitioned into two distinct categories:
+To prevent post-hoc hypothesis generation from being mistaken for rigorous testing, all project analyses are partitioned into two distinct categories:
 
-| Category | Experimental Scope | Hypotheses & Protocol |
+| Category | Experimental Scope | Hypotheses & Validation Protocol |
 | :--- | :--- | :--- |
-| **Primary (Confirmatory) Analysis** | - 10-model benchmark on Cleveland via Repeated Stratified 5-Fold CV.<br>- Zero-shot transfer to Hungary, Long Beach VA, and Switzerland under frozen parameters.<br>- Evaluation on Full (13), Common Reduced (10), and Common Reduced (9) feature sets.<br>- Primary metrics: ROC-AUC, PR-AUC, Brier score, Calibration slope/intercept. | Pre-specified hypotheses ([RQ1]–[RQ3]). Strict zero-leakage, frozen pipelines, bootstrap 95% CIs. |
-| **Secondary (Exploratory) Analysis** | - Comparison of SMOTENC oversampling vs. cost-sensitive class weighting.<br>- Sensitivity analysis of cholesterol median imputation vs. feature dropping on Swiss cohort.<br>- Ledoit-Wolf OOD distance cutoff sensitivity across natural hospital shifts.<br>- Subgroup disparity trade-off exploration. | Hypothesis-generating; clearly designated as exploratory in all reports. |
+| **Primary (Confirmatory) Analysis** | - 10-model benchmark on Cleveland via Repeated Stratified 5-Fold CV.<br>- Zero-shot transfer to Hungary, Long Beach VA, and Switzerland under frozen parameters.<br>- Separate training and evaluation of Full (13), Common Reduced (10), and Common Reduced (9) feature sets.<br>- Primary metrics: ROC-AUC, PR-AUC, Brier score, Calibration slope/intercept. | Pre-specified hypotheses ([RQ1]–[RQ3]). Strict zero-leakage, frozen pipelines, patient-level bootstrap 95% CIs. |
+| **Secondary (Exploratory) Analysis** | - Comparison of SMOTENC oversampling vs. cost-sensitive class weighting inside training folds.<br>- Sensitivity analysis of cholesterol median imputation vs. 9-feature omission on external cohorts.<br>- Empirical evaluation of frozen Cleveland OOD threshold sensitivity across external natural hospital shifts.<br>- Exploration of subgroup calibration vs. error-rate balance trade-offs. | Hypothesis-generating; clearly designated as exploratory in all reports and publications. |

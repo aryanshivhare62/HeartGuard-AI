@@ -84,12 +84,12 @@ graph TD
 
 ### 3.3 Core Machine Learning Engine
 - **`data_processing`**: Separate loaders for Pipeline A (UCI collection) and Pipeline B (Framingham). Enforces discrete tabular processing only (no ECG waveform signals or raw time-series processing). Implements anti-leakage transformers (median imputation, standardization) encapsulated in pipelines.
-- **`training_pipeline`**: Executes Repeated Stratified 5-Fold Cross-Validation on the Cleveland derivation dataset, hyperparameter optimization (`Optuna` with constrained depth/regularization), and exports frozen `.joblib` bundles containing fitted estimators, preprocessing transformers, calibration parameters, and decision thresholds. External cohorts (Hungary, Long Beach, Switzerland) are evaluated zero-shot without parameter modification.
+- **`training_pipeline`**: Executes Repeated Stratified 5-Fold Cross-Validation on the Cleveland derivation dataset, hyperparameter optimization (`Optuna` with constrained depth/regularization), and exports frozen `.joblib` bundles for three independently trained models: Full Diagnostic (13 features), Common Reduced (10 features), and Common Reduced (9 features). External cohorts (Hungary, Long Beach, Switzerland) are evaluated zero-shot without parameter modification.
 - **`inference_engine`**: High-throughput prediction service loading serialized pipelines into memory on application startup with warm cache.
-- **`calibration_engine`**: Implements post-hoc Platt scaling and Isotonic regression; computes Brier score, ECE, calibration slope, and calibration intercept.
-- **`explainability_engine`**: Wraps `shap.TreeExplainer` for tree models and `shap.LinearExplainer` for regularized logistic regression, formatting explanation payloads for frontend rendering.
-- **`fairness_engine`**: Calculates disaggregated metrics across age and sex cohorts; computes Equalized Odds differentials and Demographic Parity metrics.
-- **`uncertainty_ood_engine`**: Evaluates multivariate Mahalanobis distances using regularized Ledoit-Wolf shrinkage covariance matrices on continuous features, accompanied by prediction entropy calculations and explicit documentation of Gaussianity assumptions.
+- **`calibration_engine`**: Implements cross-fitted post-hoc Platt scaling and Isotonic regression using scikit-learn's `CalibratedClassifierCV(estimator=..., cv=5)`; evaluates calibration strictly on out-of-fold predictions and computes Brier score, ECE, calibration slope, and calibration intercept.
+- **`explainability_engine`**: Wraps `shap.TreeExplainer` for tree models and `shap.LinearExplainer` for regularized logistic regression, computing exact attributions in base log-odds space, formatting explanation payloads with explicit non-causal and pre-calibration disclaimers for frontend rendering.
+- **`fairness_engine`**: Calculates disaggregated metrics across age and sex cohorts; computes Equalized Odds differentials alongside sample and event counts to reflect small-stratum uncertainty.
+- **`uncertainty_ood_engine`**: Evaluates multivariate Mahalanobis distances using regularized Ledoit-Wolf shrinkage covariance matrices on continuous features, with threshold cutoffs determined strictly from Cleveland derivation data (never on external cohorts), accompanied by prediction entropy calculations and explicit documentation of Gaussianity assumptions.
 
 ### 3.4 Persistence and Artifact Storage Layer
 - **Relational Database**: PostgreSQL 16 managed via `SQLAlchemy 2.0` (async engine with `asyncpg`) and migration versioning via `Alembic`.

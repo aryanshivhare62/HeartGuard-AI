@@ -40,22 +40,22 @@ HeartGuard AI is an end-to-end academic research framework and demonstration dec
 - **FR-09**: The system shall display Brier score, calibration slope, and calibration-in-the-large intercept for each benchmarked model.
 
 ### Module 4: Explainability & Interpretability (SHAP)
-- **FR-10**: For every individual patient prediction, the system shall generate local SHAP attributions and render an interactive waterfall plot displaying positive and negative risk contributors.
-- **FR-11**: The system shall render global SHAP summary beeswarm plots and mean absolute feature importance rankings across all benchmarked models.
-- **FR-12**: All explanation views shall display an explicit disclaimer that feature attributions represent model statistical correlations, not biological causation.
+- **FR-10**: For every individual patient prediction, the system shall generate local SHAP attributions in the base model's log-odds (margin) space and render an interactive waterfall plot displaying positive and negative risk contributors. The interface shall clearly distinguish raw-model score attributions from post-calibration probabilities.
+- **FR-11**: The system shall render global SHAP summary beeswarm plots and mean absolute feature importance rankings across all benchmarked models in base log-odds space.
+- **FR-12**: All explanation views shall display an explicit disclaimer that feature attributions represent model statistical correlations, not biological causation, and do not represent additive percentage points of calibrated probability.
 
 ### Module 5: Cross-Dataset Benchmarking & Generalization Analytics
 - **FR-13**: The system shall provide an interactive Model Comparison Dashboard benchmarking all 10 algorithms across discrimination, precision-recall, and calibration metrics.
-- **FR-14**: The system shall display a dedicated Cross-Dataset Generalization Matrix showing performance drops ($\Delta\text{AUC}$, $\Delta\text{Brier}$) when models trained on Cleveland are evaluated zero-shot on Hungary, Long Beach, and Switzerland.
+- **FR-14**: The system shall display a dedicated Cross-Dataset Generalization Matrix showing performance drops ($\Delta\text{AUC}$, $\Delta\text{Brier}$) when models trained on Cleveland are evaluated zero-shot on Hungary, Long Beach, and Switzerland, trained separately across Full (13), Common Reduced (10), and Common Reduced (9) feature configurations.
 
 ### Module 6: Demographic Fairness & Subgroup Auditing
 - **FR-15**: The system shall compute and display disaggregated performance metrics stratified by Biological Sex (Male vs. Female) and Age Categories ($<50$, $50–65$, $>65$).
-- **FR-16**: The system shall report Equalized Odds differentials ($|\Delta\text{TPR}| + |\Delta\text{FPR}|$) to quantify potential demographic disparities.
+- **FR-16**: The system shall report Equalized Odds differentials ($|\Delta\text{TPR}| + |\Delta\text{FPR}|$) to quantify potential demographic disparities, incorporating sample size and event counts to account for small subgroup uncertainty.
 
 ### Module 7: Uncertainty & Out-of-Distribution (OOD) Guardrails
 - **FR-17**: The system shall validate all clinical inputs against hard physiological sanity boundaries, rejecting out-of-range values with informative 422 Unprocessable Entity errors.
-- **FR-18**: Prior to model inference, the system shall compute the multivariate Mahalanobis distance across continuous features using a regularized Ledoit-Wolf shrinkage covariance matrix fit on the Cleveland training cohort.
-- **FR-19**: When the Mahalanobis distance exceeds the 99th percentile $\chi^2$ threshold or prediction entropy exceeds $0.95$ bits, the system shall attach a prominent "High Uncertainty / Out-of-Distribution" warning to the prediction response, documenting known limitations regarding non-Gaussian features and entropy overconfidence.
+- **FR-18**: Prior to model inference, the system shall compute the multivariate Mahalanobis distance across continuous features using a regularized Ledoit-Wolf shrinkage covariance matrix fit strictly on the Cleveland derivation cohort.
+- **FR-19**: The OOD threshold (99th percentile $\chi^2$ cutoff) shall be determined strictly from Cleveland training/validation data (never tuned on external cohorts). When the Mahalanobis distance exceeds the Cleveland-derived threshold or prediction entropy exceeds $0.95$ bits, the system shall attach a prominent "High Uncertainty / Out-of-Distribution" warning to the prediction response, documenting known limitations regarding non-Gaussian features and entropy overconfidence.
 
 ### Module 8: Audit Logging & History
 - **FR-20**: The system shall persist every prediction request, sanitized input vector, output probabilities, calibration method, OOD flag, and SHAP vector into the PostgreSQL `prediction_logs` table.

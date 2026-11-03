@@ -99,8 +99,8 @@ The four geographic databases within the UCI Heart Disease collection represent 
 - **Class Distribution**: 115 positive (93.50%), 8 negative (6.50%) — extreme positive class skew (spectrum bias).
 - **Demographics**: Mean age $55.3 \pm 9.1$ years; 113 males (91.9%), 10 females (8.1%) — heavily male-skewed.
 - **Clinical Setting**: Patients evaluated at University Hospital Zurich and Basel.
-- **Missingness Profile**: `chol` is recorded as 0 across all 123 cases (serum cholesterol values were unrecorded in this extract); extensive missingness in exercise stress parameters (`ca`, `thal`, `slope`, `fbs`).
-  *(Note: The exact administrative or clinical reasons for missing attributes in this extract are unrecorded in the archival documentation.)*
+- **Missingness Profile**: `chol` is recorded as 0 across all 123 cases. The underlying reason why cholesterol is recorded as 0 in this dataset is not documented in the archival records and remains unverified; extensive missingness in exercise stress parameters (`ca`, `thal`, `slope`, `fbs`).
+  *(Note: The exact administrative or clinical reasons for missing attributes in this dataset are unrecorded in the archival documentation.)*
 - **HeartGuard Role**: Extreme distribution shift stress test. Evaluates model robustness when clinical prevalence is heavily skewed and exercise tests are missing.
 
 #### 4. V.A. Medical Center (Long Beach, California) — External Test Set 3
@@ -118,23 +118,26 @@ The four geographic databases within the UCI Heart Disease collection represent 
 
 ### 2.3 Feature Set Configurations & Statistical Justification
 
-To prevent arbitrary data manipulation while respecting clinical reality, HeartGuard AI establishes three distinct, pre-specified feature configurations:
+To prevent arbitrary data manipulation while respecting clinical reality, HeartGuard AI establishes three distinct, pre-specified feature configurations. **Crucially, each configuration is trained and tuned as a completely separate, independent model pipeline on the Cleveland derivation cohort before being frozen for external evaluation**:
 
 1. **Full Diagnostic Set (13 Predictors)**:
    - *Features Included*: `age`, `sex`, `cp`, `trestbps`, `chol`, `fbs`, `restecg`, `thalach`, `exang`, `oldpeak`, `slope`, `ca`, `thal`.
-   - *Evaluation Scope*: Restricted to the Cleveland derivation cohort (and internal cross-validation), where fluoroscopy (`ca`) and thallium scintigraphy (`thal`) were clinically recorded for $>98\%$ of patients.
+   - *Model Derivation*: Trained exclusively on Cleveland using all 13 predictors; preprocessing, hyperparameters, and calibrators are fit on this 13-dimensional feature space.
+   - *Evaluation Scope*: Restricted to Cleveland internal repeated cross-validation where fluoroscopy (`ca`) and thallium scintigraphy (`thal`) were clinically recorded for $>98\%$ of patients.
    - *Rationale*: Provides the maximal-information diagnostic benchmark.
 
 2. **Common Reduced Diagnostic Set — 10-Feature Variant (With Cholesterol)**:
    - *Features Included*: `age`, `sex`, `cp`, `trestbps`, `chol`, `fbs`, `restecg`, `thalach`, `exang`, `oldpeak`.
    - *Features Omitted*: `slope`, `ca`, `thal` (omitted because `ca` and `thal` are missing in $90\%–99\%$ of European records; imputing them would manufacture unmeasured diagnostic tests).
-   - *Evaluation Scope*: Trained on Cleveland; evaluated zero-shot on Hungarian ($N=294$) and Long Beach VA ($N=200$) cohorts, with Hungarian/VA missing cholesterol entries treated via Cleveland-derived median imputation.
+   - *Model Derivation*: **Trained independently on Cleveland using strictly these 10 features**. Hyperparameters, scaling parameters, and calibrators are optimized specifically for this 10-feature model and frozen.
+   - *Evaluation Scope*: Evaluated zero-shot on Hungarian ($N=294$) and Long Beach VA ($N=200$) cohorts, with missing cholesterol entries in those cohorts imputed using the frozen Cleveland training median.
 
 3. **Common Reduced Diagnostic Set — 9-Feature Variant (Without Cholesterol)**:
    - *Features Included*: `age`, `sex`, `cp`, `trestbps`, `fbs`, `restecg`, `thalach`, `exang`, `oldpeak`.
    - *Features Omitted*: `slope`, `ca`, `thal`, **and `chol`**.
-   - *Evaluation Scope*: Trained on Cleveland; evaluated zero-shot across **all external cohorts, specifically including Switzerland ($N=123$)**, where serum cholesterol is 100% missing (all 0s).
-   - *Rationale*: Allows direct cross-center comparison without forcing synthetic laboratory value imputation onto an entire cohort where cholesterol was never recorded.
+   - *Model Derivation*: **Trained independently on Cleveland using strictly these 9 features**. Hyperparameters, scaling parameters, and calibrators are optimized specifically for this 9-feature model and frozen.
+   - *Evaluation Scope*: Evaluated zero-shot across **all external cohorts, specifically including Switzerland ($N=123$)**, where serum cholesterol is 100% missing (recorded as 0 across all records).
+   - *Rationale*: Allows direct cross-center comparison without forcing synthetic laboratory value imputation onto an entire cohort where cholesterol was never recorded. Models do NOT drop features at test time from a 13-feature model; each configuration represents a distinct model trained on its native feature subspace.
 
 ---
 

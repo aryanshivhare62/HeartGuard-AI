@@ -170,7 +170,7 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 | **W2-T6** | Download Statlog heart dataset | **COMPLETED** | `data/raw/statlog/heart.dat` (SHA256: f5f3b42...) |
 | **W2-T7** | Retrieve Framingham educational CSV | **COMPLETED** | `data/raw/framingham/framingham.csv` (SHA256: 2c0e57d...) — provenance UNRESOLVED |
 | **W2-T8** | Record SHA-256 checksums and provenance | **COMPLETED** | `data/raw/CHECKSUMS.md` |
-| **W2-T9** | Statlog vs. Cleveland programmatic duplicate verification | **COMPLETED** | `reports/STATLOG_DUPLICATE_REPORT.md` |
+| **W2-T9** | Statlog vs. Cleveland programmatic duplicate verification | **COMPLETED + AUDITED** | `reports/STATLOG_DUPLICATE_REPORT.md` (corrected); `reports/STATLOG_AUDIT_DETAIL.csv` |
 | **W2-T10** | Framingham provenance investigation | **COMPLETED** | `reports/DATASET_PROVENANCE_REPORT.md` (marked UNRESOLVED) |
 | **W2-T11** | Automated EDA (dimensions, types, missingness, distributions, correlations, site comparisons, class imbalance) | **COMPLETED** | `reports/EXPLORATORY_DATA_ANALYSIS_REPORT.md` |
 | **W2-T12** | Missingness report | **COMPLETED** | `reports/MISSINGNESS_REPORT.md` |
@@ -178,6 +178,7 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 | **W2-T14** | Build reusable preprocessing pipelines (13F / 10F / 9F / Framingham) | **COMPLETED** | `src/pipelines/preprocessors.py` |
 | **W2-T15** | Preprocessing documentation | **COMPLETED** | `reports/PREPROCESSING_DOCUMENTATION.md` |
 | **W2-T16** | Anti-data-leakage tests (7 tests) | **COMPLETED** | `tests/test_leakage.py` — 7/7 PASS |
+| **W2-T18** | Statlog audit: deep verification with NaN/complete-row classification | **COMPLETED** | `scripts/audit_statlog_duplicates.py`; 22 automated tests 22/22 PASS |
 | **W2-T17** | EDA notebook | **COMPLETED** | `notebooks/01_exploratory_data_analysis.ipynb` |
 
 **Week 2 Completion: 100%**
@@ -186,11 +187,25 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 ### Key Week 2 Findings
 
-1. **Statlog Duplicate Status (Q1 RESOLVED):**
-   - 270 of 270 Statlog rows have exact string-key matches in Cleveland's 303 rows.
-   - 33 Cleveland rows contain missing values (`?`) and cannot produce exact keys.
-   - Zero near-matches (Euclidean distance > 0 and <= 1.0) beyond exact matches.
-   - **Interpretation:** Statlog is almost certainly a complete-case subset of Cleveland (missing values removed). Status is marked pending clinical coding review; not formally declared as proven subset.
+1. **Statlog Duplicate Status (Q1 RESOLVED — CORRECTED by Week 2 Audit):**
+
+   Initial report (before audit): claimed NaN values explain all 33 unmatched Cleveland rows. **This was incorrect.**
+
+   Corrected findings from `scripts/audit_statlog_duplicates.py` (22 automated tests, all pass):
+
+   | Metric | Verified Count |
+   |--------|---------------|
+   | Cleveland rows with exact Statlog match | **270 of 303** |
+   | Statlog rows with a Cleveland counterpart | **270 of 270 (100%)** |
+   | Unmatched Cleveland rows -- contain NaN predictor(s) | **6** |
+   | Unmatched Cleveland rows -- complete (no NaN), no Statlog counterpart | **27** |
+   | Target label inconsistencies among 270 matched rows | **0** |
+
+   **The 27 complete unmatched rows are Cleveland-only records with no Statlog equivalent.** They are not explained by NaN. The 27 rows are indices 274-301 (excluding 287) — the last ~28 rows of the Cleveland file which appear to be an augmented subset not present in Statlog.
+
+   **Corrected conclusion:** Statlog is a proper subset of Cleveland (270 of 303 rows), but the relationship is NOT simply "complete cases of Cleveland." Cleveland contains 27 additional complete rows that are absent from Statlog. Feature coding is numerically identical across all 13 predictors. All 270 matched rows have consistent binary target labels under the documented mapping (Cleveland num>=1 <-> Statlog target==2).
+
+   **Critical implication:** Statlog must NOT be used as an external validation set. All 270 of its rows exist in Cleveland — using it as a test set while training on Cleveland constitutes data leakage.
 
 2. **Framingham Provenance (Q4 PARTIALLY RESOLVED):**
    - File retrieved from GitHub educational mirror (GauravPadawe repository).
@@ -209,9 +224,9 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 | ID | Issue | Status |
 |----|-------|--------|
-| U1 | Framingham educational CSV redistribution licence | UNRESOLVED — requires NHLBI BIOLINCC verification |
-| U2 | Statlog/Cleveland clinical coding equivalence review | PENDING — programmatic match found; needs domain expert review |
-| U3 | Switzerland cholesterol zero-coding cause | UNVERIFIED — not documented in UCI repository |
+| U1 | Framingham educational CSV redistribution licence | UNRESOLVED -- requires NHLBI BIOLINCC verification |
+| U2 | Statlog/Cleveland: 27 complete Cleveland rows absent from Statlog -- nature of this subset unknown | OPEN -- structure of Cleveland file (rows 274-301) vs. Statlog origin not explained by available documentation |
+| U3 | Switzerland cholesterol zero-coding cause | UNVERIFIED -- not documented in UCI repository |
 | U4 | Q2: empirical comparison of 10F vs. 9F models on Switzerland | DEFERRED to Week 5 external validation |
 | U5 | Q3: OOD false-alarm rate on Cleveland folds | DEFERRED to Week 6 |
 

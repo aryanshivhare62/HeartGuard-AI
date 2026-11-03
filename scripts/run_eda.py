@@ -338,3 +338,4 @@ with open(compat_path, "w", encoding="utf-8") as f:
 
 print(f"Compatibility report written to: {compat_path}")
 print("\nEDA complete.")
+

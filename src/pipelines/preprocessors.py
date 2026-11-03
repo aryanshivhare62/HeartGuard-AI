@@ -168,3 +168,4 @@ def get_feature_config(name: str) -> list:
     if name not in FEATURE_CONFIGS:
         raise ValueError(f"Unknown config '{name}'. Choose from: {list(FEATURE_CONFIGS)}")
     return FEATURE_CONFIGS[name]
+

@@ -138,3 +138,4 @@ pipe = get_full_diagnostic_pipeline()
 X_train_t = pipe.fit_transform(X_train)  # fit ONLY on training data
 X_test_t  = pipe.transform(X_test)       # transform using training statistics
 ```
+

@@ -112,3 +112,4 @@ Verification script: `scripts/verify_statlog_duplicates.py`
 | Original Framingham Heart Study | Managed by NHLBI; official data requires application via BIOLINCC (https://biolincc.nhlbi.nih.gov/teaching/) |
 
 **Resolution:** The circulated 4,240-row CSV is an educational derivative of unknown exact provenance. Formal redistribution rights cannot be confirmed from the GitHub mirror. This dataset is marked **UNRESOLVED** for provenance and licensing until independently verified against NHLBI BIOLINCC records. It is retained for structural reference in Pipeline B design but must not be included in any published results without verified provenance.
+

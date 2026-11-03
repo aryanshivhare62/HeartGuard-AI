@@ -201,6 +201,16 @@ Verification status notes:
 - **Verification Status**: Full Text Verified
 - **Domain Relevance**: Guides subgroup metric choices (equalized odds, demographic parity, predictive parity) and warns that equalizing one metric often forces disparities in others under unequal baseline prevalence.
 
+### [REF-16b] Theoretical Impossibility of Simultaneous Fairness Metrics
+- **Title**: Inherent Trade-Offs in the Fair Determination of Risk Scores
+- **Authors**: Jon Kleinberg, Sendhil Mullainathan, Manish Raghavan
+- **Year**: 2017 (arXiv preprint 2016)
+- **Conference**: *Proceedings of the 8th Innovations in Theoretical Computer Science Conference (ITCS 2017)*, LIPIcs Vol. 67, Article 43
+- **DOI**: [10.4230/LIPIcs.ITCS.2017.43](https://doi.org/10.4230/LIPIcs.ITCS.2017.43)
+- **arXiv**: [arXiv:1609.05807](https://arxiv.org/abs/1609.05807)
+- **Verification Status**: Full Text Verified (OA)
+- **Domain Relevance**: Mathematical proof that calibration within groups, equal false positive rates, and equal false negative rates are mutually incompatible whenever groups have differing base prevalence rates, unless the predictor has perfect deterministic accuracy.
+
 ### [REF-17] Sex Differences and Bias in Cardiovascular Disease
 - **Title**: Cardiovascular Disease and the Female Disadvantage
 - **Authors**: Mark Woodward

@@ -30,7 +30,7 @@ HeartGuard AI formulates an empirical research investigation and open-source sof
   Implement and benchmark five traditional algorithms (Logistic Regression, Decision Trees, Random Forest, K-Nearest Neighbors, Support Vector Classifier) and five advanced ensemble/boosting algorithms (Gradient Boosting, XGBoost, LightGBM, CatBoost, Stacking Classifier) using Repeated Stratified 5-Fold Cross-Validation on the Cleveland derivation dataset, with non-parametric bootstrap confidence intervals to account for small sample size uncertainty ($N=303$).
 
 * **RO3: Systematic Cross-Dataset Generalization Evaluation Under Frozen Parameters**  
-  Quantify the generalization gap by developing, tuning, and calibrating models exclusively on the primary Cleveland dataset, freezing all preprocessing transformations, model weights, calibrator parameters, and decision thresholds, and evaluating zero-shot external performance on independent cohorts (Hungarian Institute of Cardiology, VA Long Beach, Switzerland) without any external tuning or re-calibration.
+  Quantify the generalization gap by developing, tuning, and calibrating models exclusively on the primary Cleveland dataset, freezing all preprocessing transformations, model weights, calibrator parameters, and decision thresholds, and evaluating zero-shot external performance on independent cohorts (Hungarian Institute of Cardiology, VA Long Beach, Switzerland) across Full (13-feature), Common Reduced (10-feature with cholesterol), and Common Reduced (9-feature without cholesterol) configurations without any external tuning or re-calibration.
 
 * **RO4: Local and Global Explainability via SHAP**  
   Integrate SHapley Additive exPlanations (KernelSHAP and TreeSHAP) to provide both population-level feature importance hierarchies and individual patient-level risk attribution waterfall plots, accompanied by explicit non-causal interpretability guidelines.
@@ -82,7 +82,7 @@ HeartGuard AI formulates an empirical research investigation and open-source sof
 | Research Objective | Primary Research Question | Validation Methodology | Key Output Artifact |
 | :--- | :--- | :--- | :--- |
 | **RO1** (Pipeline & Segregation) | Cross-Pipeline Integrity | Code modularity, schema validation, zero-leakage pipeline | `src/data/`, `DATASET_DOCUMENTATION.md` |
-| **RO2** (10-Model Benchmark) | RQ2 (Comparative Model Performance) | Nested Stratified 5-Fold CV, Hyperparameter grid search | Benchmark leaderboard, Confusion matrices |
+| **RO2** (10-Model Benchmark) | RQ2 (Comparative Model Performance) | Repeated Stratified 5-Fold CV (10 repeats), Hyperparameter search | Benchmark leaderboard, Confusion matrices |
 | **RO3** (Cross-Dataset Evaluation) | RQ1 (Generalization Gap) | Train on Cleveland $\rightarrow$ Test on Hungary, Long Beach, Switzerland | Generalization gap tables, $\Delta\text{AUC}$ plots |
 | **RO4** (SHAP Explainability) | RQ4 (Attribution & Fidelity) | Global summary beeswarm, dependence plots, individual waterfall | `src/explainability/`, interactive SHAP dashboard |
 | **RO5** (Probability Calibration) | RQ3 (Calibration Reliability) | Calibration curves, Brier score, Platt / Isotonic methods | Calibration comparison curves, Brier matrix |

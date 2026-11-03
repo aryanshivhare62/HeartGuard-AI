@@ -1,9 +1,9 @@
 # HeartGuard AI: Development Progress & Project Ledger
 
-**Current Status**: Week 1 Complete (Final Scientific Audit Applied)  
-**Current Milestone**: Milestone 1 — Research Foundation, Literature Verification, System Design & Architecture  
+**Current Status**: Week 2 Complete  
+**Current Milestone**: Milestone 2 — Dataset Ingestion, Provenance Auditing, EDA, Preprocessing  
 **Developer Commitment**: 6–8 hours/week (1 flexible working day per week)  
-**Last Updated**: November 2026 (Final Scientific Audit Pass)
+**Last Updated**: November 2026 (Week 2 Execution Complete)
 
 ---
 
@@ -11,7 +11,7 @@
 
 ```
 Milestone 1: Week 1 [COMPLETED]  - Research Foundation, Literature Review, Architecture, Documentation
-Milestone 2: Week 2 [PLANNED]    - Dataset Ingestion, Provenance Auditing, EDA, Preprocessing
+Milestone 2: Week 2 [COMPLETED]  - Dataset Ingestion, Provenance Auditing, EDA, Preprocessing
 Milestone 3: Week 3 [PLANNED]    - Traditional ML Baselines & Cross-Validation Benchmarks (5 Models)
 Milestone 4: Week 4 [PLANNED]    - Advanced Ensembles, Optuna Tuning, SMOTENC vs. Class Weighting (5 Models)
 Milestone 5: Week 5 [PLANNED]    - Cross-Dataset Generalization & External Validation Experiments
@@ -156,12 +156,74 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 ---
 
-## 8. Next Session Plan (Revised Week 2 Plan)
+## 8. Week 2 Execution Results
 
-When Week 2 begins, the agent and developer will execute:
-1. Ingest raw datasets into `data/raw/` (UCI Cleveland, Hungarian, Long Beach, Switzerland; Statlog; Framingham educational CSV).
-2. Execute programmatic row-hash matching script between Statlog and Cleveland to resolve Question Q1.
-3. Conduct automated Exploratory Data Analysis (EDA) scripts computing distributions, skewness, missingness maps, and correlation heatmaps per site.
-4. Formulate the three feature configurations (13-feature Full Diagnostic Set, 10-feature Common Reduced Set with cholesterol, 9-feature Common Reduced Set without cholesterol) with statistical justification.
-5. Author scikit-learn custom preprocessing transformers (`src/pipelines/preprocessors.py`) strictly isolating fold-level imputation and scaling.
-6. Verify anti-leakage test assertions on mock splits.
+### Week 2 Task Status
+
+| Task ID | Description | Status | Artifact |
+|:--------|:-----------|:-------|:---------|
+| **W2-T1** | Create project directories (`data/raw/`, `data/processed/`, `notebooks/`, `src/pipelines/`, `scripts/`) | **COMPLETED** | Directory structure created |
+| **W2-T2** | Download Cleveland raw dataset | **COMPLETED** | `data/raw/uci/cleveland.data` (SHA256: a74b7ef...) |
+| **W2-T3** | Download Hungary raw dataset | **COMPLETED** | `data/raw/uci/hungary.data` (SHA256: d1ad108...) |
+| **W2-T4** | Download Switzerland raw dataset | **COMPLETED** | `data/raw/uci/switzerland.data` (SHA256: 834a405...) |
+| **W2-T5** | Download VA Long Beach raw dataset | **COMPLETED** | `data/raw/uci/va.data` (SHA256: e7c93d8...) |
+| **W2-T6** | Download Statlog heart dataset | **COMPLETED** | `data/raw/statlog/heart.dat` (SHA256: f5f3b42...) |
+| **W2-T7** | Retrieve Framingham educational CSV | **COMPLETED** | `data/raw/framingham/framingham.csv` (SHA256: 2c0e57d...) — provenance UNRESOLVED |
+| **W2-T8** | Record SHA-256 checksums and provenance | **COMPLETED** | `data/raw/CHECKSUMS.md` |
+| **W2-T9** | Statlog vs. Cleveland programmatic duplicate verification | **COMPLETED** | `reports/STATLOG_DUPLICATE_REPORT.md` |
+| **W2-T10** | Framingham provenance investigation | **COMPLETED** | `reports/DATASET_PROVENANCE_REPORT.md` (marked UNRESOLVED) |
+| **W2-T11** | Automated EDA (dimensions, types, missingness, distributions, correlations, site comparisons, class imbalance) | **COMPLETED** | `reports/EXPLORATORY_DATA_ANALYSIS_REPORT.md` |
+| **W2-T12** | Missingness report | **COMPLETED** | `reports/MISSINGNESS_REPORT.md` |
+| **W2-T13** | Dataset compatibility report | **COMPLETED** | `reports/DATASET_COMPATIBILITY_REPORT.md` |
+| **W2-T14** | Build reusable preprocessing pipelines (13F / 10F / 9F / Framingham) | **COMPLETED** | `src/pipelines/preprocessors.py` |
+| **W2-T15** | Preprocessing documentation | **COMPLETED** | `reports/PREPROCESSING_DOCUMENTATION.md` |
+| **W2-T16** | Anti-data-leakage tests (7 tests) | **COMPLETED** | `tests/test_leakage.py` — 7/7 PASS |
+| **W2-T17** | EDA notebook | **COMPLETED** | `notebooks/01_exploratory_data_analysis.ipynb` |
+
+**Week 2 Completion: 100%**
+
+---
+
+### Key Week 2 Findings
+
+1. **Statlog Duplicate Status (Q1 RESOLVED):**
+   - 270 of 270 Statlog rows have exact string-key matches in Cleveland's 303 rows.
+   - 33 Cleveland rows contain missing values (`?`) and cannot produce exact keys.
+   - Zero near-matches (Euclidean distance > 0 and <= 1.0) beyond exact matches.
+   - **Interpretation:** Statlog is almost certainly a complete-case subset of Cleveland (missing values removed). Status is marked pending clinical coding review; not formally declared as proven subset.
+
+2. **Framingham Provenance (Q4 PARTIALLY RESOLVED):**
+   - File retrieved from GitHub educational mirror (GauravPadawe repository).
+   - 4,238 rows, 16 columns, target: `TenYearCHD`.
+   - Formal redistribution licence from NHLBI BIOLINCC cannot be confirmed from GitHub mirror alone.
+   - **Status: UNRESOLVED** — marked for provenance confirmation before use in published results.
+
+3. **Switzerland cholesterol zeros:**
+   - Switzerland has a high proportion of zero-coded `chol` values. Cause is NOT documented in the UCI repository. No unsupported clinical attribution is made.
+
+4. **Anti-Leakage Tests:** All 7 pytest assertions pass, confirming no data from test/validation folds leaks into training-fold imputation or scaling statistics.
+
+---
+
+### Week 2 Unresolved Issues
+
+| ID | Issue | Status |
+|----|-------|--------|
+| U1 | Framingham educational CSV redistribution licence | UNRESOLVED — requires NHLBI BIOLINCC verification |
+| U2 | Statlog/Cleveland clinical coding equivalence review | PENDING — programmatic match found; needs domain expert review |
+| U3 | Switzerland cholesterol zero-coding cause | UNVERIFIED — not documented in UCI repository |
+| U4 | Q2: empirical comparison of 10F vs. 9F models on Switzerland | DEFERRED to Week 5 external validation |
+| U5 | Q3: OOD false-alarm rate on Cleveland folds | DEFERRED to Week 6 |
+
+---
+
+## 9. Next Session Plan (Week 3)
+
+When Week 3 begins, execute:
+1. Implement 5 baseline ML models on Cleveland: Logistic Regression, Decision Tree, Random Forest, SVM, k-NN.
+2. Run Repeated Stratified 5-Fold CV (10 repeats, 50 splits) using the three feature configurations separately.
+3. Collect AUC-ROC, AUC-PR, accuracy, F1, sensitivity, specificity per fold per model.
+4. Compute non-parametric bootstrap confidence intervals (B=1,000) for each metric.
+5. Document results in `reports/BASELINE_MODEL_RESULTS.md`.
+6. Ensure no hyperparameter tuning occurs in Week 3 (baselines with default settings first).
+7. Commit results to Git.

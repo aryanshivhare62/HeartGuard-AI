@@ -2,7 +2,7 @@
 
 **Project Title**: HeartGuard AI: An Explainable, Calibrated and Cross-Dataset Machine Learning Framework for Heart Disease Risk Prediction  
 **Scope**: 10-Week Engineering & Applied Machine Learning Research Study  
-**Standard**: TRIPOD Statement Compliant
+**Standard**: TRIPOD Statement (2015) & TRIPOD+AI Statement (2024 [REF-01b])
 
 ---
 
@@ -27,10 +27,10 @@ HeartGuard AI formulates an empirical research investigation and open-source sof
   Design, document, and implement an end-to-end reproducible machine learning data processing pipeline that strictly separates cross-sectional diagnostic coronary artery disease (UCI Multicenter Collection) from longitudinal 10-year prognostic cardiovascular risk (Framingham Heart Study), eliminating data leakage and endpoint conflation.
 
 * **RO2: Multi-Model Benchmark Under Robust Validation**  
-  Implement and benchmark five traditional algorithms (Logistic Regression, Decision Trees, Random Forest, K-Nearest Neighbors, Support Vector Classifier) and five advanced ensemble/boosting algorithms (Gradient Boosting, XGBoost, LightGBM, CatBoost, Stacking Classifier) using strict nested stratified cross-validation within training folds.
+  Implement and benchmark five traditional algorithms (Logistic Regression, Decision Trees, Random Forest, K-Nearest Neighbors, Support Vector Classifier) and five advanced ensemble/boosting algorithms (Gradient Boosting, XGBoost, LightGBM, CatBoost, Stacking Classifier) using Repeated Stratified 5-Fold Cross-Validation on the Cleveland derivation dataset, with non-parametric bootstrap confidence intervals to account for small sample size uncertainty ($N=303$).
 
-* **RO3: Systematic Cross-Dataset Generalization Evaluation**  
-  Quantify the generalization gap by training models on the primary compatible dataset (e.g., UCI Cleveland) and evaluating zero-shot external performance on independent compatible cohorts (e.g., Hungarian Institute of Cardiology, VA Long Beach, Switzerland), measuring changes in discrimination, calibration, and classification errors.
+* **RO3: Systematic Cross-Dataset Generalization Evaluation Under Frozen Parameters**  
+  Quantify the generalization gap by developing, tuning, and calibrating models exclusively on the primary Cleveland dataset, freezing all preprocessing transformations, model weights, calibrator parameters, and decision thresholds, and evaluating zero-shot external performance on independent cohorts (Hungarian Institute of Cardiology, VA Long Beach, Switzerland) without any external tuning or re-calibration.
 
 * **RO4: Local and Global Explainability via SHAP**  
   Integrate SHapley Additive exPlanations (KernelSHAP and TreeSHAP) to provide both population-level feature importance hierarchies and individual patient-level risk attribution waterfall plots, accompanied by explicit non-causal interpretability guidelines.
@@ -87,3 +87,4 @@ HeartGuard AI formulates an empirical research investigation and open-source sof
 | **RO4** (SHAP Explainability) | RQ4 (Attribution & Fidelity) | Global summary beeswarm, dependence plots, individual waterfall | `src/explainability/`, interactive SHAP dashboard |
 | **RO5** (Probability Calibration) | RQ3 (Calibration Reliability) | Calibration curves, Brier score, Platt / Isotonic methods | Calibration comparison curves, Brier matrix |
 | **RO6** (Subgroup & OOD Guardrails)| RQ5 (Subgroup Equity) & RQ6 (OOD Safety) | Stratified sex/age metrics, Mahalanobis distance filter | Fairness audit reports, OOD filter module |
+

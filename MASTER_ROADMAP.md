@@ -166,3 +166,4 @@ Week 10: [          ] Final Project Thesis, Academic Research Paper Draft, Prese
   6. Tag the canonical Git release `v1.0.0` and finalize project documentation.
 - **Deliverables**: Final Major Project Thesis (PDF), Research Paper Manuscript (PDF/LaTeX), Viva PPT Deck, Comprehensive Viva FAQ Guide.
 - **Viva Checkpoint**: Final mock viva simulation; defending all research objectives, empirical findings, and engineering choices.
+

@@ -1,7 +1,7 @@
 # HeartGuard AI: Project Requirements Specification (PRS)
 
 **Project Title**: HeartGuard AI: An Explainable, Calibrated and Cross-Dataset Machine Learning Framework for Heart Disease Risk Prediction  
-**Standard**: ISO/IEC/IEEE 29148:2018 (Systems and software engineering — Life cycle processes — Requirements engineering)  
+**Standard**: ISO/IEC/IEEE 29148:2018; TRIPOD Statement (2015) & TRIPOD+AI (2024 [REF-01b])  
 **Date**: November 2026 (Week 1 Phase)
 
 ---
@@ -54,12 +54,15 @@ HeartGuard AI is an end-to-end academic research framework and demonstration dec
 
 ### Module 7: Uncertainty & Out-of-Distribution (OOD) Guardrails
 - **FR-17**: The system shall validate all clinical inputs against hard physiological sanity boundaries, rejecting out-of-range values with informative 422 Unprocessable Entity errors.
-- **FR-18**: Prior to model inference, the system shall compute the multivariate Mahalanobis distance against the training cohort distribution.
-- **FR-19**: When the Mahalanobis distance exceeds the 99th percentile $\chi^2$ threshold or prediction entropy exceeds $0.95$ bits, the system shall attach a prominent "High Uncertainty / Out-of-Distribution" warning to the prediction response.
+- **FR-18**: Prior to model inference, the system shall compute the multivariate Mahalanobis distance across continuous features using a regularized Ledoit-Wolf shrinkage covariance matrix fit on the Cleveland training cohort.
+- **FR-19**: When the Mahalanobis distance exceeds the 99th percentile $\chi^2$ threshold or prediction entropy exceeds $0.95$ bits, the system shall attach a prominent "High Uncertainty / Out-of-Distribution" warning to the prediction response, documenting known limitations regarding non-Gaussian features and entropy overconfidence.
 
 ### Module 8: Audit Logging & History
 - **FR-20**: The system shall persist every prediction request, sanitized input vector, output probabilities, calibration method, OOD flag, and SHAP vector into the PostgreSQL `prediction_logs` table.
 - **FR-21**: Authenticated clinicians shall be able to view, search, and export their past prediction audit logs.
+
+### Module 9: Input Modality & ECG Scope Boundary
+- **FR-22 (ECG Tabular Modality Boundary)**: The system shall process ECG data strictly as discrete tabular clinical observations (`restecg`: categorical 0/1/2; `oldpeak`: continuous ST-depression in mm; `slope`: categorical 1/2/3). The system shall **NOT** accept ECG waveform file uploads, digital raw signal time-series, or execute deep 1D/2D CNN waveform classification. Any expansion of ECG modality is formally deferred until after Week 2 data exploration.
 
 ---
 
@@ -90,3 +93,4 @@ HeartGuard AI is an end-to-end academic research framework and demonstration dec
 - **SR-02 (Type Safety)**: Python code must be statically typed using type hints; frontend must use TypeScript or strictly structured JSDoc Zod validation.
 - **SR-03 (Automated Testing)**: The codebase must maintain $\ge 85\%$ test coverage across data transformation, model inference, calibration, and API endpoints.
 - **SR-04 (Containerization)**: The complete system must build and run cleanly on any host OS running Docker Compose using a single command: `docker-compose up --build`.
+

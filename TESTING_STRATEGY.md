@@ -124,3 +124,4 @@ Prior to final submission and viva examination, the developer will execute a rep
 2. **Database Migration & Seed**: `alembic upgrade head && python scripts/seed_benchmarks.py`
 3. **Automated Test Run**: `pytest tests/ -v --cov=src --cov-report=html`
 4. **End-to-End Verification Check**: Verify interactive dashboard displays live Plotly charts, SHAP waterfalls, calibration badges, and cross-dataset degradation matrices.
+

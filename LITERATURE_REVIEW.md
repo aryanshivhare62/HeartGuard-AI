@@ -24,8 +24,10 @@ HeartGuard AI addresses these interconnected challenges through a unified, repro
 
 ## 2. Reporting Standards and Methodological Foundations
 
-### 2.1 The TRIPOD Statement
-The TRIPOD guideline ([REF-01], Collins et al., 2015) was created to combat widespread methodological opacity in multivariable prediction literature. Prediction studies frequently omit explicit eligibility criteria, definitions of candidate predictors, handling of missing data, internal resampling methodology, and calibration metrics. 
+### 2.1 The TRIPOD and TRIPOD+AI Statements
+The TRIPOD guideline ([REF-01], Collins et al., 2015) and its 2024 machine learning expansion **TRIPOD+AI** ([REF-01b], Collins et al., 2024, *BMJ*) establish essential reporting recommendations for prediction models developed using statistical regression and artificial intelligence. 
+
+Prediction studies frequently omit explicit eligibility criteria, definitions of candidate predictors, handling of missing data, internal resampling methodology, and calibration metrics. TRIPOD+AI adds specific guidance for machine learning pipelines: documenting algorithmic preprocessing, hyperparameter search spaces, compute environment, model availability, and demographic subgroup auditing.
 
 TRIPOD establishes four validation categories:
 - **Type 1a**: Model development and performance evaluated on the exact same data (resubstitution).
@@ -34,7 +36,7 @@ TRIPOD establishes four validation categories:
 - **Type 3**: Model development on one dataset and external validation on a separate, independent dataset.
 - **Type 4**: Evaluation on entirely independent data by independent investigators.
 
-HeartGuard AI explicitly structures its experimental design around **Type 1b/Type 2 internal cross-validation** and **Type 3 cross-dataset external validation**, directly reporting all 22 checklist items.
+HeartGuard AI explicitly structures its experimental design around **Type 1b/Type 2 internal cross-validation** and **Type 3 cross-dataset external validation**, directly adhering to the updated TRIPOD+AI checklist.
 
 ### 2.2 The Steyerberg-Vergouwe Framework
 Steyerberg and Vergouwe ([REF-02], 2014) articulated seven foundational development steps coupled with the "ABCD" external validation protocol:
@@ -59,15 +61,21 @@ Derived from the seminal work of Detrano et al. ([REF-03], 1989), the UCI Heart 
 The clinical endpoint in the UCI collection is **cross-sectional angiographic coronary artery disease (CAD)**, defined as $\ge 50\%$ diameter stenosis in at least one major coronary vessel (`num` $\ge 1$).
 
 ### 3.2 The Statlog Heart Disease Dataset
-The Statlog Heart Disease dataset (270 records, 13 numeric features) is an educational benchmark derived directly from the Cleveland database. Features were pre-processed and discretized, and categorical chest pain types were recoded. HeartGuard AI treats Statlog as a derived subset requiring strict provenance cross-matching rather than an independent external validation cohort.
+The Statlog Heart Disease dataset (270 records, 13 numeric features) is officially cataloged as a modified numeric variant of the Cleveland database curated during the European StatLog project. 
 
-### 3.3 The Framingham Heart Study
+**Scientific Audit Note on Duplicate Status**:  
+While widely assumed in literature to comprise a complete-case subset of Cleveland, exact record-by-record duplication has not been verified in our codebase. HeartGuard AI avoids making unsupported assertions of complete equivalence; exact row-matching and value-concordance testing is designated as a Week 2 programmatic verification task before any benchmark role is assigned to Statlog.
+
+### 3.3 The Framingham Heart Study & The Educational CSV
 Wilson et al. ([REF-04], 1998) established the Framingham Risk Functions to calculate the **10-year prospective incidence of hard coronary heart disease events** (angina pectoris, myocardial infarction, coronary insufficiency, or coronary death) in symptom-free community participants. 
 
-**Critical Methodological Distinction**:  
+**Crucial Provenance Distinction**:  
+The original Framingham Heart Study is a landmark longitudinal cohort spanning multiple generations with thousands of phenotypic and genetic attributes. The dataset utilized in HeartGuard AI is the standardized **4,240-row educational teaching subset** (distributed via BioLINCC and university courseware such as MIT Sloan's *The Analytics Edge*). This subset provides baseline clinical variables mapped to a binary 10-year incident event flag (`TenYearCHD`). It is licensed and utilized strictly for educational and academic research demonstrations.
+
+**Critical Methodological Distinction (Diagnostic vs. Prognostic)**:  
 Conflating UCI (cross-sectional presence of severe angiographic stenosis in symptomatic patients referred for catheterization) with Framingham (10-year prospective event risk in an asymptomatic community cohort) constitutes a severe epidemiological error. HeartGuard AI establishes two separate, isolated experimental pipelines:
-1. **Pipeline A**: Cross-sectional diagnostic CAD classification (UCI Cleveland, Hungarian, Long Beach, Switzerland).
-2. **Pipeline B**: Longitudinal 10-year prognostic CHD incidence estimation (Framingham cohort).
+1. **Pipeline A**: Cross-sectional diagnostic CAD classification (UCI Cleveland derivation with Hungarian, Long Beach, and Switzerland external test sets).
+2. **Pipeline B**: Longitudinal 10-year prognostic CHD incidence estimation (Framingham educational cohort).
 
 ---
 
@@ -119,9 +127,11 @@ A severe flaw in applied AI literature is the implicit assumption that high SHAP
 ## 7. Demographic Fairness and Subgroup Performance
 
 ### 7.1 Algorithmic Bias in Healthcare
-Chen et al. ([REF-15], 2021) and Rajkomar et al. ([REF-16], 2018) demonstrated that clinical ML models trained on unweighted or demographically skewed cohorts systematically underperform on marginalized or underrepresented groups. In cardiovascular medicine, historical datasets predominantly enrolled middle-aged men. 
+Chen et al. ([REF-15], 2021) and Rajkomar et al. ([REF-16], 2018) demonstrated that clinical ML models trained on unweighted or demographically skewed cohorts frequently exhibit unequal error rates across demographic subgroups. In cardiovascular medicine, historical datasets predominantly enrolled middle-aged men. 
 
-Woodward ([REF-17], 2019) emphasized the "female disadvantage": women frequently present with atypical symptoms, smaller coronary vessel diffuse atherosclerosis, and different age-adjusted risk factor trajectories. Models evaluated only on aggregated population metrics can mask unacceptable false-negative rates in female or elderly subgroups.
+Woodward ([REF-17], 2019) documented the complex sex disparities in cardiovascular clinical presentation. Women often present with different symptom profiles, higher prevalence of microvascular disease, and different age-adjusted trajectories for risk factors like diabetes and hypertension compared to men. However, algorithmic fairness must be qualified carefully:
+1. *Mathematical Impossibility of Simultaneous Parity*: When base disease prevalence differs between males and females in a dataset, no model can satisfy both equal true positive rates (equal opportunity) and equal positive predictive value (predictive parity) simultaneously without achieving perfect separation.
+2. *Context-Dependent Fairness*: Simply forcing demographic parity (equal prediction rates) when true underlying prevalence differs can lead to dangerous clinical underdiagnosis or overtreatment. HeartGuard AI therefore focuses on transparent subgroup performance auditing (disaggregated reporting of Sensitivity, Specificity, and Calibration by sex and age).
 
 ### 7.2 Subgroup Evaluation Protocol
 HeartGuard AI computes disaggregated performance metrics stratified by:
@@ -129,7 +139,7 @@ HeartGuard AI computes disaggregated performance metrics stratified by:
 - **Age cohorts**: $<50$, $50–65$, and $>65$ years.
 
 Key evaluation metrics include:
-- Stratified Sensitivity / Recall (ensuring equal clinical detection rates).
+- Stratified Sensitivity / Recall (clinical detection rates).
 - Stratified Specificity and False Positive Rates.
 - Stratified Calibration Slope and Intercept.
 
@@ -140,11 +150,14 @@ Key evaluation metrics include:
 ### 8.1 Calibration Degradation Under Covariate Shift
 Ovadia et al. ([REF-18], NeurIPS 2019) demonstrated that while deterministic classifiers achieve acceptable calibration on in-distribution test sets, predictive uncertainty degrades severely when tested under distribution shifts. Models become confidently wrong on out-of-distribution inputs.
 
-### 8.2 Out-of-Distribution Guardrails for Tabular Inputs
-Following Lee et al. ([REF-19], NeurIPS 2018), HeartGuard AI implements an explicit input-space anomaly detector. Prior to generating inference:
-1. **Range Validation**: Bivariate and univariate sanity bounds on clinical parameters (e.g., systolic BP between 70 and 240 mmHg).
-2. **Mahalanobis Distance Metric**: Computing the distance $D_M(x) = \sqrt{(x - \mu)^T \Sigma^{-1} (x - \mu)}$ against the multivariate training distribution.
-3. **Thresholded Rejection / Uncertainty Warning**: When $D_M(x)$ exceeds the 99th percentile threshold or when model predictive entropy $H(p) = - \sum p_k \log p_k$ exceeds clinical safety bounds, the system alerts the clinician that the input lies outside the supported parameter manifold.
+### 8.2 Out-of-Distribution Guardrails for Tabular Inputs & Limitations
+Following Lee et al. ([REF-19], NeurIPS 2018), HeartGuard AI implements an input-space anomaly detector with explicit awareness of methodological limitations:
+1. **Range Validation**: Hard physiological boundary checks rejecting impossible values.
+2. **Mahalanobis Distance Metric with Shrinkage**: Computing the distance $D_M(x) = \sqrt{(x - \mu)^T \Sigma_{\text{shrink}}^{-1} (x - \mu)}$ on standardized continuous features using Ledoit-Wolf shrinkage to guard against ill-conditioned covariance matrices.
+3. **Acknowledged Limitations**:
+   - *Gaussianity Assumption*: Mahalanobis distance assumes approximately multivariate Gaussian distributions; it is therefore restricted to continuous clinical parameters rather than discrete/binary attributes.
+   - *Entropy Overconfidence*: Prediction entropy $H(p) = - \sum p_k \log p_k$ can fail when uncalibrated models output high-confidence predictions on shifted distributions.
+4. **Empirical Evaluation on Shifted Data**: The OOD detector will be evaluated empirically by testing its capacity to differentiate held-out Cleveland cases from natural shifts in European/VA external cohorts and synthetic perturbations.
 
 ---
 
@@ -159,3 +172,4 @@ Following Lee et al. ([REF-19], NeurIPS 2018), HeartGuard AI implements an expli
 | **Explainability** | Unchecked claims of clinical causality from SHAP values | Global beeswarm & local waterfall SHAP with clear non-causal warnings | Lundberg et al. (2017, 2018), Rudin (2019) |
 | **Equity & Safety** | Aggregate cohort metrics masking demographic disparities | Disaggregated sex and age subgroup evaluation (Equalized Odds) | Rajkomar et al. (2018), Woodward (2019) |
 | **Deployment Guardrails** | Silent failure when fed anomalous or out-of-range data | Mahalanobis distance OOD detection and prediction entropy warnings | Lee et al. (2018), Ovadia et al. (2019) |
+

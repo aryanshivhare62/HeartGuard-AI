@@ -87,3 +87,4 @@ The literature reveals that these five dimensions cannot be solved in isolation:
 - The entire system can be corrupted if anomalous patient data is evaluated without an out-of-distribution guardrail.
 
 Therefore, the primary contribution of **HeartGuard AI** is the construction, systematic evaluation, and open-source dissemination of a **reproducible, integrated framework** that addresses all five dimensions together in a transparent, dual-pipeline clinical prediction architecture.
+

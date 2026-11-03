@@ -59,49 +59,73 @@ HeartGuard AI establishes an uncompromising **two-pipeline data segregation arch
 
 ---
 
-### 2.2 Detailed Sub-Center Characteristics
+### 2.2 Detailed Sub-Center Characteristics & Disaggregated Profiles
+
+The four geographic databases within the UCI Heart Disease collection represent distinct clinical populations, diagnostic environments, and missingness mechanisms. They must be documented separately:
 
 #### 1. Cleveland Clinic Foundation (Ohio, USA) — Primary Derivation Cohort
 - **File**: `processed.cleveland.data`
-- **Total Records**: 303 patient cases.
-- **Target Prevalence**: 139 positive ($\ge 50\%$ stenosis, 45.87%), 164 negative (54.13%).
+- **Total Records ($N$)**: 303 patient cases.
+- **Target Definition**: Angiographic coronary artery stenosis $\ge 50\%$ in at least one major vessel (`num` $\ge 1$).
+- **Class Distribution**: 139 positive (45.87%), 164 negative (54.13%).
 - **Demographics**: Mean age $54.4 \pm 9.0$ years; 206 males (68.0%), 97 females (32.0%).
-- **Missing Values**: Total 6 values across two features:
-  - `ca` (number of major vessels colored by fluoroscopy): 4 missing values (`?`).
-  - `thal` (thallium heart scan): 2 missing values (`?`).
-- **Clinical Setting**: Patients referred for diagnostic coronary arteriography due to suspected angina pectoris.
-- **HeartGuard Role**: Primary training, internal cross-validation, and algorithm benchmarking derivation set.
+- **Clinical Setting**: Symptomatic outpatient and inpatient referrals for diagnostic coronary arteriography.
+- **Missingness Profile**: 6 missing entries across two features: `ca` (4 missing, 1.3%), `thal` (2 missing, 0.7%). All other 11 features have 0 missing values.
+- **ECG Measurement Modality**: Tabular discrete parameters (`restecg`: 0/1/2 based on Estes' ECG voltage and ST criteria; `oldpeak`: numeric continuous ST depression in mm; `slope`: peak exercise ST slope). **No raw ECG waveform signals or time-series tracings exist in this tabular dataset.**
+- **HeartGuard Role**: Primary derivation cohort for model architecture selection, hyperparameter tuning, imputer fitting, scaler estimation, and decision threshold determination.
 
 #### 2. Hungarian Institute of Cardiology (Budapest) — External Test Set 1
 - **File**: `processed.hungarian.data`
-- **Total Records**: 294 patient cases.
-- **Target Prevalence**: 106 positive (36.05%), 188 negative (63.95%).
-- **Demographics**: Mean age $47.9 \pm 7.8$ years; 213 males (72.4%), 81 females (27.6%).
-- **Missing Values**:
-  - `trestbps` (resting blood pressure): 1 missing.
-  - `chol` (serum cholesterol): 23 missing (frequently coded as 0).
-  - `fbs` (fasting blood sugar): 8 missing.
-  - `restecg` (resting ECG): 1 missing.
-  - `slope`: 190 missing.
-  - `ca`: 291 missing ($\sim 99\%$ missingness; fluoroscopy rarely performed).
-  - `thal`: 266 missing ($\sim 90\%$ missingness; thallium scans rarely performed).
-- **HeartGuard Role**: External validation of models trained on compatible feature subsets (excluding or imputing `ca`, `thal`, `slope`).
+- **Total Records ($N$)**: 294 patient cases.
+- **Target Definition**: Angiographic stenosis $\ge 50\%$ (`num` $\ge 1$).
+- **Class Distribution**: 106 positive (36.05%), 188 negative (63.95%) — notably lower disease prevalence than Cleveland.
+- **Demographics**: Mean age $47.9 \pm 7.8$ years (significantly younger cohort); 213 males (72.4%), 81 females (27.6%).
+- **Clinical Setting**: European tertiary cardiology center evaluating post-angina and post-infarct candidates.
+- **Missingness Profile & Clinical Cause**:
+  - `chol`: 23 missing entries (often recorded as 0 due to local non-fasting admission protocols).
+  - `trestbps`: 1 missing (0.3%).
+  - `fbs`: 8 missing (2.7%).
+  - `restecg`: 1 missing (0.3%).
+  - `slope`: 190 missing (64.6%).
+  - `ca`: 291 missing (99.0%) — catheterization laboratories in Budapest at the time did not systematically record fluoroscopic calcification scores.
+  - `thal`: 266 missing (90.5%) — radionuclide thallium scintigraphy was not standard routine diagnostic practice at this center in the 1980s.
+- **HeartGuard Role**: External zero-shot validation under frozen parameters.
 
 #### 3. University Hospital Zurich & Basel (Switzerland) — External Test Set 2
 - **File**: `processed.switzerland.data`
-- **Total Records**: 123 patient cases.
-- **Target Prevalence**: 115 positive (93.50%—heavily skewed severe disease population), 8 negative (6.50%).
-- **Demographics**: Mean age $55.3 \pm 9.1$ years; 113 males (91.9%), 10 females (8.1%).
-- **Missing Values**: Extensive missingness in `chol` (all recorded as 0), `fbs`, `ca`, `thal`, and exercise parameters.
-- **HeartGuard Role**: Extreme distribution shift stress test. Evaluates how models handle acute spectrum bias (inpatient catheterization with near-universal severe CAD).
+- **Total Records ($N$)**: 123 patient cases.
+- **Target Definition**: Angiographic stenosis $\ge 50\%$ (`num` $\ge 1$).
+- **Class Distribution**: 115 positive (93.50%), 8 negative (6.50%) — extreme positive class skew (acute spectrum bias).
+- **Demographics**: Mean age $55.3 \pm 9.1$ years; 113 males (91.9%), 10 females (8.1%) — heavily male-skewed.
+- **Clinical Setting**: High-acuity inpatient surgical cohort referred for pre-operative coronary revascularization assessment.
+- **Missingness Profile**: `chol` is recorded as 0 across all 123 cases (serum cholesterol assays were not included in this transfer extract); extensive missingness in exercise stress parameters (`ca`, `thal`, `slope`, `fbs`).
+- **HeartGuard Role**: Extreme distribution shift stress test. Evaluates model robustness when clinical prevalence is heavily skewed and exercise tests were aborted.
 
 #### 4. V.A. Medical Center (Long Beach, California) — External Test Set 3
 - **File**: `processed.va.data`
-- **Total Records**: 200 patient cases.
-- **Target Prevalence**: 151 positive (75.50%), 49 negative (24.50%).
-- **Demographics**: Veterans Affairs male population: mean age $59.4 \pm 7.9$ years; 194 males (97.0%), 6 females (3.0%).
-- **Missing Values**: Severe missingness in `chol` (frequent 0s), `ca`, and `thal`.
-- **HeartGuard Role**: External validation under extreme male demographic bias and high disease severity.
+- **Total Records ($N$)**: 200 patient cases.
+- **Target Definition**: Angiographic stenosis $\ge 50\%$ (`num` $\ge 1$).
+- **Class Distribution**: 151 positive (75.50%), 49 negative (24.50%).
+- **Demographics**: Older military veteran cohort: mean age $59.4 \pm 7.9$ years; 194 males (97.0%), 6 females (3.0%).
+- **Clinical Setting**: Inpatient Veterans Affairs medical center serving an older demographic with multi-vessel CAD and comorbid conditions.
+- **Missingness Profile**: Substantial missingness in `chol` (many 0s), `ca`, `thal`, and `slope`.
+- **HeartGuard Role**: External zero-shot validation under veteran demographic bias, advanced age, and high comorbidity.
+
+---
+
+### 2.3 Rationale Against Forcing an Identical Feature Set
+
+> [!IMPORTANT]
+> **Clinical and Statistical Justification for Feature Subsets**:  
+> Forcing a model trained with all 13 predictors (including fluoroscopy `ca` and thallium scan `thal`) onto the Hungarian, Swiss, or Long Beach datasets requires either:
+> 1. Imputing 90–99% of `ca` and `thal` using Cleveland statistics, which artificially manufactures fake diagnostic test results that were never clinically obtained and risks severe distribution distortion; or
+> 2. Discarding over 90% of the external cohorts, eliminating statistical power.
+>
+> Therefore, HeartGuard AI defines two clear, clinically motivated feature configurations:
+> - **Configuration 1 (Full Diagnostic Set — 13 Predictors)**: Used for Cleveland internal cross-validation and benchmarking where fluoroscopy and thallium scintigraphy are available.
+> - **Configuration 2 (Core Bedside/Non-Invasive Set — 10 Predictors)**: Drops `ca`, `thal`, and `slope`. Models are trained on Cleveland using only the 10 universally recorded features (age, sex, chest pain type, resting BP, fasting sugar, resting ECG, maximum HR, exercise angina, ST-depression `oldpeak`). This model is frozen and transferred zero-shot to Hungary, Long Beach, and Switzerland.
+>
+> This dual configuration provides both an upper-bound clinical diagnostic model and an authentic, statistically justified external validation protocol.
 
 ---
 
@@ -129,31 +153,33 @@ HeartGuard AI establishes an uncompromising **two-pipeline data segregation arch
 ### 2.4 Statlog Heart Disease Dataset (Dataset ID: 145)
 - **Official Source**: UC Irvine Machine Learning Repository  
   URL: [https://archive.ics.uci.edu/dataset/145/statlog+heart](https://archive.ics.uci.edu/dataset/145/statlog+heart)
+- **Donor**: European StatLog Project (1992)
 - **Total Records**: 270 instances.
 - **Number of Features**: 13 numeric predictors + 1 binary class.
 - **Target Variable**: `1` (Absence of heart disease), `2` (Presence of heart disease).
 - **Target Distribution**: 150 absence (55.56%), 120 presence (44.44%).
 - **Missing Values**: 0 missing values reported.
-- **Provenance & Derivation Analysis**:  
-  Statlog Heart is not an independent hospital cohort. It was curated for the 1992 Statlog project by selecting complete cases directly from the Cleveland database, recoding features, and re-labeling target 0 to 1 and targets 1–4 to 2.
-- **Critical HeartGuard Rule**:  
-  Statlog Heart **MUST NOT** be treated as a true external validation set for Cleveland-trained models because it shares patient records with Cleveland. In Week 2, HeartGuard AI will perform exact row matching to identify duplicate records and document the exact overlap.
+- **Official UCI Description & Provenance Status**:  
+  According to the official UCI documentation, this dataset is a modified variant of the Cleveland database, where attributes were extracted from the larger clinical set and mapped to numeric formats.
+- **Scientific Audit Correction (Verification Status)**:  
+  While literature frequently treats Statlog as a subset of Cleveland complete cases, **it is methodologically incorrect to assert that all 270 records are exact duplicates of Cleveland cases prior to programmatic verification**. In Week 2, HeartGuard AI will execute exact row-level hashing and value-matching between `processed.cleveland.data` and `statlog.dat` to determine the precise overlap, recoding discrepancies, and whether any records represent distinct patients or modified entries. Until this verification is completed, Statlog is classified as a *derived benchmark under verification*, not an independent external validation cohort.
 
 ---
 
-## 3. Pipeline B: Prognostic Dataset (Framingham Heart Study Subset)
+## 3. Pipeline B: Prognostic Dataset (Framingham Educational Subset)
 
-### 3.1 Dataset Profile & Provenance
-- **Official Source**: National Heart, Lung, and Blood Institute (NHLBI) & Boston University  
-  Official Study Portal: [https://www.framinghamheartstudy.org/](https://www.framinghamheartstudy.org/)
-- **Derived Educational Dataset File**: `framingham.csv` (Circulated via Bio-Linux, Kaggle, and Biostatistics educational courses).
-- **Total Records**: 4,240 individual participant records.
-- **Target Variable**: `TenYearCHD` (Binary: `1` = Developed CHD within 10 years, `0` = Remained free of CHD).
-- **Target Distribution**: 644 positive events (15.19%), 3,596 negative events (84.81%) — severe class imbalance.
-- **Study Design**: Prospective longitudinal cohort study. Participants were free of coronary heart disease at examination baseline and followed prospectively for 10 years.
-
-### 3.2 Provenance Verification Notice
-The 4,240-row dataset corresponds to a standardized teaching subset derived from Exam 1 of the Framingham Offspring / Original Cohorts made available for epidemiological biostatistics coursework. It is not the full proprietary multi-generation NHLBI repository (which contains genetic, imaging, and multi-decade records). HeartGuard AI explicitly documents this provenance to prevent overstating data scope.
+### 3.1 Dataset Profile & Provenance Differentiation
+- **Original Study**: The Framingham Heart Study (FHS) is a long-term, multi-generational prospective epidemiological study initiated in 1948 in Framingham, Massachusetts, under the auspices of the National Heart Institute (now NHLBI) and Boston University. The complete original repository contains multi-decade longitudinal follow-ups, genetic data, extensive lab panels, and imaging.
+- **Derived Educational Dataset File**: `framingham.csv`
+- **Total Records**: 4,240 participant observations.
+- **Target Variable**: `TenYearCHD` (Binary: `1` = Developed incident CHD within 10-year follow-up, `0` = Remained event-free).
+- **Target Distribution**: 644 positive events (15.19%), 3,596 event-free (84.81%) — class imbalance ratio ~1:5.6.
+- **Exact Provenance and Lineage**:
+  The widely circulated 4,240-row dataset is a standardized teaching subset derived from Exam 1 baseline examinations of the Original/Offspring cohorts. It was curated for public health coursework (notably distributed via NHLBI teaching datasets, BioLINCC educational archives, and academic platforms such as MIT Sloan's *The Analytics Edge* open courseware).
+- **Usage Rights & Academic Licensing**:
+  The 4,240-row derived teaching file is distributed for academic, educational, and pedagogical research demonstrations. It is not licensed for proprietary clinical diagnostic products. HeartGuard AI utilizes this dataset strictly as an academic benchmarking demonstration of longitudinal 10-year risk modeling.
+- **Critical Distinction from Clinical FHS Risk Functions**:
+  Official published Framingham risk scores (e.g., Wilson et al., 1998 [REF-04]; D'Agostino et al., 2008) use continuous parametric Cox proportional hazards models with specific age-stratified log-transformed variables. Machine learning models trained on this 4,240-row cross-sectional tabular file predict the empirical binary indicator `TenYearCHD` and represent an educational demonstration, not the official NHLBI clinical risk calculators.
 
 ### 3.3 Framingham Feature Catalog
 
@@ -212,7 +238,18 @@ The following matrix documents feature availability and semantic alignment acros
 
 ## 5. Execution Rules for Week 2 Onward
 
-1. **Zero-Overlap External Validation**: Models trained on UCI Cleveland must be evaluated on Hungarian, Long Beach, and Switzerland only after dropping or imputing non-shared features (`ca`, `thal`, `slope`).
-2. **Duplicate Detection Protocol**: Before evaluating Statlog, row-level hashing will verify exact duplicate records with Cleveland.
-3. **Imputation Leakage Prevention**: Missing values in cholesterol (values $= 0$ in Hungarian and VA) must be explicitly flagged and imputed strictly inside training folds.
-4. **Isolated Schemas**: Pydantic data schemas will validate input records independently for `UCIDiagnosticInput` and `FraminghamRiskInput`.
+1. **Strict Cleveland-Only Model Derivation & Frozen Evaluation**:
+   - Model development, feature transformation, hyperparameter search, probability calibration fitting (Platt/Isotonic), and decision threshold tuning are conducted **strictly on the Cleveland dataset** (or training folds thereof).
+   - Once finalized, the entire pipeline (imputation values, scaling coefficients, model weights, calibrator parameters, decision cutoff) is **frozen**.
+   - External datasets (Hungary, Long Beach VA, Switzerland) are used exclusively for zero-shot testing. **External test datasets must never be touched for tuning, feature selection, calibration fitting, or model selection.**
+2. **Statlog Verification Status**:
+   - Statlog will be subjected to row-hash matching against Cleveland in Week 2. Do not assume 100% duplicate identity without programmatic code test evidence.
+3. **Imputation Leakage Prevention**:
+   - In Hungarian and VA datasets, missing cholesterol (entries recorded as 0) must be treated as missing values, not real hypocholesterolemia. When testing the frozen Cleveland model, test records must be transformed using the median learned from the Cleveland training fold.
+4. **ECG Scope Boundary**:
+   - **No ECG signal processing, waveform uploads, raw voltage time-series, or deep 1D/2D CNN architectures are in scope for HeartGuard AI.**
+   - All ECG information is confined to the standard discrete tabular variables (`restecg`, `oldpeak`, `slope`) recorded as clinical scalar values.
+   - Any proposal to expand into ECG waveform processing is deferred and will be revisited only after Week 2 data exploration.
+5. **Isolated Pydantic Schemas**:
+   - Pydantic data schemas will validate input records independently for `UCIDiagnosticInput` (Pipeline A) and `FraminghamRiskInput` (Pipeline B), strictly prohibiting cross-contamination.
+

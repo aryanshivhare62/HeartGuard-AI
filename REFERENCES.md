@@ -21,6 +21,16 @@ Verification status notes:
 - **Verification Status**: Full Text Verified (OA)
 - **Domain Relevance**: Establishes the 22-item TRIPOD checklist followed across HeartGuard AI for clear documentation of candidate predictors, sample flow, internal/external validation, discrimination, and calibration.
 
+### [REF-01b] TRIPOD+AI Statement (Machine Learning Extension)
+- **Title**: TRIPOD+AI statement: updated guidance for reporting clinical prediction models that use regression or machine learning methods
+- **Authors**: Gary S. Collins, Karel G. M. Moons, Paula Dhiman, Constanza L. Andaur Navarro, Benjamin L. Higgins, Matthew W. Hooft, Glen P. Martin, Richard D. Riley, Maarten van Smeden, Ben Van Calster
+- **Year**: 2024
+- **Journal**: *The BMJ*, 385:e078378
+- **DOI**: [10.1136/bmj-2023-078378](https://doi.org/10.1136/bmj-2023-078378)
+- **PubMed ID**: 38626947
+- **Verification Status**: Full Text Verified (OA)
+- **Domain Relevance**: The definitive 2024 reporting standard specifically designed for clinical machine learning prediction models, addressing algorithmic transparency, data preprocessing, hyperparameter optimization, fair subgroup evaluation, and model availability.
+
 ### [REF-02] Seven Steps and ABCD Validation Framework
 - **Title**: Towards better clinical prediction models: seven steps for development and an ABCD for validation
 - **Authors**: Ewout W. Steyerberg, Yvonne Vergouwe
@@ -53,7 +63,7 @@ Verification status notes:
 - **DOI**: [10.1161/01.cir.97.18.1837](https://doi.org/10.1161/01.cir.97.18.1837)
 - **PubMed ID**: 9603539
 - **Verification Status**: Full Text Verified (OA)
-- **Domain Relevance**: Defines the Framingham 10-year prognostic coronary heart disease (CHD) endpoint. Explicitly establishes why Framingham must remain an independent prognostic experiment distinct from UCI diagnostic cross-sectional classification.
+- **Domain Relevance**: Defines the Framingham 10-year prognostic coronary heart disease (CHD) endpoint. Explicitly establishes why Framingham must remain an independent prognostic experiment distinct from UCI diagnostic cross-sectional classification. Note: The commonly circulated 4,240-row dataset is a derived educational subset (BioLINCC / teaching collection) and must not be conflated with the complete multi-generational cohort repository.
 
 ---
 
@@ -224,3 +234,4 @@ Verification status notes:
 - **arXiv**: [arXiv:1807.03888](https://arxiv.org/abs/1807.03888)
 - **Verification Status**: Full Text Verified (OA)
 - **Domain Relevance**: Direct mathematical basis for HeartGuard AI's tabular OOD detection module, using feature covariance modeling and Mahalanobis confidence scores to flag out-of-bounds patient feature vectors.
+

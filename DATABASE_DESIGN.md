@@ -231,3 +231,4 @@ Audit record of every inference execution.
    Enables high-performance querying of nested feature parameters and subgroup evaluations.
 3. **Partitioning Strategy (Future-Proofing)**:
    The `prediction_logs` table is structured to allow range partitioning by `created_at` (e.g., monthly partitions) if inference volume scales during clinical deployment.
+

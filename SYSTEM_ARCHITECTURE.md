@@ -83,13 +83,13 @@ graph TD
 - **API Versioning**: Canonical `/api/v1` namespace prefix for long-term route stability.
 
 ### 3.3 Core Machine Learning Engine
-- **`data_processing`**: Separate loaders for Pipeline A (UCI collection) and Pipeline B (Framingham). Implements anti-leakage transformers (median imputation, standardization) encapsulated in pipelines.
-- **`training_pipeline`**: Executes nested cross-validation, hyperparameter optimization (`Optuna`), and exports standardized `.joblib` bundles containing fitted estimators, preprocessing transformers, and performance metadata.
+- **`data_processing`**: Separate loaders for Pipeline A (UCI collection) and Pipeline B (Framingham). Enforces discrete tabular processing only (no ECG waveform signals or raw time-series processing). Implements anti-leakage transformers (median imputation, standardization) encapsulated in pipelines.
+- **`training_pipeline`**: Executes Repeated Stratified 5-Fold Cross-Validation on the Cleveland derivation dataset, hyperparameter optimization (`Optuna` with constrained depth/regularization), and exports frozen `.joblib` bundles containing fitted estimators, preprocessing transformers, calibration parameters, and decision thresholds. External cohorts (Hungary, Long Beach, Switzerland) are evaluated zero-shot without parameter modification.
 - **`inference_engine`**: High-throughput prediction service loading serialized pipelines into memory on application startup with warm cache.
 - **`calibration_engine`**: Implements post-hoc Platt scaling and Isotonic regression; computes Brier score, ECE, calibration slope, and calibration intercept.
 - **`explainability_engine`**: Wraps `shap.TreeExplainer` for tree models and `shap.LinearExplainer` for regularized logistic regression, formatting explanation payloads for frontend rendering.
 - **`fairness_engine`**: Calculates disaggregated metrics across age and sex cohorts; computes Equalized Odds differentials and Demographic Parity metrics.
-- **`uncertainty_ood_engine`**: Evaluates multivariate Mahalanobis distances against training covariance matrices, returning continuous anomaly scores and binary OOD flags.
+- **`uncertainty_ood_engine`**: Evaluates multivariate Mahalanobis distances using regularized Ledoit-Wolf shrinkage covariance matrices on continuous features, accompanied by prediction entropy calculations and explicit documentation of Gaussianity assumptions.
 
 ### 3.4 Persistence and Artifact Storage Layer
 - **Relational Database**: PostgreSQL 16 managed via `SQLAlchemy 2.0` (async engine with `asyncpg`) and migration versioning via `Alembic`.
@@ -174,3 +174,4 @@ graph LR
 
 - **Build Profiles**: Development (hot reload via volume mounts) and Production (multi-stage minimal Docker builds).
 - **Health Checks**: Built-in container health checks (`/health` endpoint on FastAPI and `pg_isready` on PostgreSQL).
+

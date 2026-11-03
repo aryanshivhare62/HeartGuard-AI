@@ -135,3 +135,4 @@ HeartGuardAI/
 ├── tests/                   # Automated test suites (unit, integration, ML integrity)
 └── frontend/                # React Vite Tailwind client application (Week 8)
 ```
+

@@ -2,7 +2,7 @@
 
 **Author**: Principal ML Research Engineer & Data Scientist  
 **Date**: November 2026 (Week 1 Research Phase)  
-**Strict Compliance**: TRIPOD Guidelines (Item 10: Statistical analysis methods; Item 12: Internal validation; Item 13: Model building)
+**Strict Compliance**: TRIPOD Statement (2015) & TRIPOD+AI Statement (Collins et al., 2024 [REF-01b])
 
 ---
 
@@ -14,6 +14,8 @@ In clinical prediction modeling, data leakage is the most frequent cause of spur
 2. **Encapsulation via Pipelines**: All preprocessing and modeling steps are encapsulated within `sklearn.pipeline.Pipeline` or `imblearn.pipeline.Pipeline` objects to enforce boundary isolation.
 3. **Multi-Faceted Metric Evaluation**: No model will ever be selected or promoted based on classification accuracy alone. Models are judged on discrimination (ROC-AUC, PR-AUC), clinical sensitivity (recall at fixed specificity), and probability calibration (Brier score, calibration slope/intercept).
 4. **Calibration Isolation**: Probability calibrators (Platt Sigmoid scaling and Isotonic regression) must be fit on dedicated validation holdouts, never on the data used to train the base estimator.
+5. **Frozen External Validation Boundary**: All model selection, feature engineering, hyperparameter tuning, calibrator fitting, and decision threshold determination are performed exclusively on the Cleveland cohort (or internal training folds). External test cohorts (Hungary, Long Beach, Switzerland) are strictly frozen test targets evaluated zero-shot; they must never be used for tuning or threshold adjustments.
+6. **ECG Tabular Boundary**: ECG features are strictly limited to discrete tabular clinical variables (`restecg`, `oldpeak`, `slope`) as recorded on clinical case reports. Raw ECG waveform signals, digital voltage time-series, or signal filtering are explicitly excluded from the current scope.
 
 ---
 
@@ -89,20 +91,50 @@ HeartGuard AI benchmarks 10 diverse classification architectures spanning parame
   - Subgroup Disaggregated Metrics
 ```
 
-### 3.1 Validation Protocols
-1. **Repeated Stratified $K$-Fold Cross-Validation**:
-   - $K = 5$ folds, 5 repeats (total 25 iterations) for primary model benchmark and hyperparameter optimization.
-   - Stratification preserves the positive/negative outcome ratio across all folds.
-2. **Nested Cross-Validation**:
-   - Inner 3-fold loop for hyperparameter search via `RandomizedSearchCV` or `Optuna`.
-   - Outer loop for unbiased performance estimation.
-3. **External Cross-Dataset Transfer Testing (Type 3)**:
-   - Train on the complete Cleveland derivation set ($N=303$).
-   - Direct, zero-shot evaluation on:
-     - Hungarian cohort ($N=294$)
-     - Long Beach VA cohort ($N=200$)
-     - Switzerland cohort ($N=123$)
-   - Evaluation across harmonized feature subsets (handling missingness without leaking test labels).
+### 3.1 Statistical Assessment of Validation Schemes on Small Datasets ($N=303$)
+
+A critical methodological question in clinical biostatistics is whether **nested five-fold cross-validation** is statistically appropriate for small datasets such as the Cleveland cohort ($N=303$, with 139 positive and 164 negative cases).
+
+#### Statistical Dilemma:
+- In a standard $5 \times 5$ nested cross-validation scheme:
+  - The outer training partition contains $\approx 242$ samples, and the outer test partition contains $\approx 61$ samples.
+  - The inner loop further splits the $242$ samples into $80/20$ splits, yielding inner training sets of $\approx 194$ samples and inner validation sets of **only $\approx 48$ samples** (containing only $\approx 22$ positive events).
+- **Statistical Consequences on $N \approx 48$ Inner Folds**:
+  1. *High Estimator Variance*: A change in outcome classification for just 2 or 3 patient cases shifts fold accuracy or sensitivity by $5\%–6\%$, making hyperparameter selection noisy and unstable across outer folds.
+  2. *Hyperparameter Incoherence*: Different outer folds often select divergent hyperparameter configurations (e.g., Fold 1 selects `max_depth=3`, while Fold 2 selects `max_depth=6`), meaning nested CV evaluates the *procedure* rather than producing a single final clinical model.
+  3. *Small Cell Sizes in Calibration*: Evaluating probability calibration curves across $48$ samples yields severely underpowered decile bins ($4–5$ patients per bin), rendering calibration assessment inside inner folds unreliable.
+
+#### HeartGuard AI Methodological Decision:
+1. **Primary Internal Validation**: Use **Repeated Stratified $K$-Fold Cross-Validation** ($K=5$, 10 repeats, total 50 evaluations) for model benchmarking and stability analysis. Hyperparameter tuning will use constrained search spaces with strong $L_2$ shrinkage and shallow tree depths to prevent overfitting.
+2. **Empirical Uncertainty Quantification**: All internal performance estimates will be accompanied by empirical $95\%$ confidence intervals derived from non-parametric bootstrapping ($B=1,000$ iterations) and DeLong's variance test for ROC-AUC.
+3. **Explicit Documentation of Small Sample Limitations**: We explicitly document that on $N=303$, statistical power to detect small differences in AUC ($\Delta\text{AUC} < 0.03$) between competitive models is limited.
+
+---
+
+### 3.2 External Cross-Dataset Transfer Protocol (Strictly Frozen)
+
+```
+       Cleveland Primary Derivation Cohort (N=303)
+                           │
+             [Model Development & Tuning]
+             - Repeated Stratified 5-Fold CV
+             - Hyperparameter Selection
+             - Platt / Isotonic Calibrator Fit
+             - Decision Threshold Optimization (tau)
+                           │
+             ══════════════╪════════════════════════════════════════════
+                           │   FROZEN MODEL ARTIFACT (Zero Leakage)
+                           ▼   (Weights, Imputers, Calibrators, Thresholds Fixed)
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+       Hungarian (N=294) Long Beach (N=200) Switzerland (N=123)
+       [Zero-Shot]       [Zero-Shot]        [Zero-Shot]
+```
+
+- **Protocol Rules**:
+  1. No tuning, feature selection, threshold adjustment, or retraining is permitted on Hungary, Long Beach, or Switzerland.
+  2. Missing feature entries in external sets (e.g., zero cholesterol) are transformed strictly using the frozen imputer statistics derived from Cleveland.
+  3. Performance drops ($\Delta\text{AUC}$, $\Delta\text{Brier}$, $\Delta\text{ECE}$) are computed as unadjusted empirical transfer gaps.
 
 ---
 
@@ -170,16 +202,36 @@ To achieve **Moderate Calibration** ([REF-09], Van Calster et al., 2016):
 
 ---
 
-## 8. Subgroup Fairness & Out-of-Distribution Guardrails
+## 8. Subgroup Fairness & Out-of-Distribution (OOD) Guardrails
 
-1. **Subgroup Disaggregation**:
-   - Performance metrics (Sensitivity, Specificity, Brier score) computed separately for:
-     - Biological Sex: Female ($n=97$ Cleveland) vs. Male ($n=206$ Cleveland).
-     - Age Groups: Younger ($<50$), Middle ($50–65$), Older ($>65$).
-   - Equalized Odds disparity $\Delta_{\text{EO}} = |\text{TPR}_{\text{male}} - \text{TPR}_{\text{female}}| + |\text{FPR}_{\text{male}} - \text{FPR}_{\text{female}}|$ tracked across models.
-2. **Out-of-Distribution (OOD) Guardrail Implementation**:
-   - Compute multivariate empirical mean vector $\hat{\mu}$ and covariance matrix $\hat{\Sigma}$ on standardized training features.
-   - For any incoming patient vector $x_{\text{new}}$, compute the squared Mahalanobis distance:
-     $$D^2(x_{\text{new}}) = (x_{\text{new}} - \hat{\mu})^T \hat{\Sigma}^{-1} (x_{\text{new}} - \hat{\mu})$$
-   - If $D^2(x_{\text{new}}) > \chi^2_{p, 0.99}$, flag input as an out-of-distribution anomaly.
-   - Measure predictive Shannon entropy $H(\hat{p}) = - \sum_{c} \hat{p}_c \log_2 \hat{p}_c$. Inputs near maximum entropy ($H \approx 1.0$) trigger high uncertainty warnings.
+### 8.1 Qualified Demographic Fairness Evaluation
+- **Premise**: Subgroup performance must be analyzed disaggregated by Biological Sex (Female vs. Male) and Age strata ($<50$, $50–65$, $>65$).
+- **Scientific Qualification on Fairness Impossibility**:
+  - As proven by biostatistical literature (e.g., Rajkomar et al., 2018 [REF-16]), when baseline disease prevalence differs across demographic groups (in Cleveland: male prevalence $\approx 55.3\%$, female prevalence $\approx 25.8\%$), **it is mathematically impossible to simultaneously satisfy Equalized Odds (equal TPR and FPR) and Predictive Parity (equal PPV/Precision)** unless the classifier achieves $100\%$ accuracy.
+  - Therefore, HeartGuard AI does not claim that a single "fairness optimizer" can eliminate all disparities. Instead, we conduct transparent audit reporting, documenting sensitivity, specificity, and positive predictive value disaggregated across demographic strata.
+
+---
+
+### 8.2 Out-of-Distribution (OOD) Detection Methodology & Limitations
+
+#### 1. Methodological Formulation:
+To detect patient vectors that lie far outside the clinical data distribution of the training cohort, we compute the squared Mahalanobis distance:
+$$D^2(x) = (x - \hat{\mu})^T \hat{\Sigma}_{\text{shrink}}^{-1} (x - \hat{\mu})$$
+where $\hat{\mu}$ is the sample mean vector and $\hat{\Sigma}_{\text{shrink}}$ is a regularized covariance matrix.
+
+#### 2. Regularized Shrinkage Covariance (Ledoit-Wolf):
+- **Limitation of Empirical Covariance**: On moderate sample sizes with correlated clinical variables (e.g., systolic BP, age, cholesterol), standard sample covariance matrices $\hat{\Sigma}$ can become ill-conditioned or nearly singular, leading to unstable matrix inversion $\hat{\Sigma}^{-1}$ and erratic distance spikes.
+- **Solution**: We implement **Ledoit-Wolf shrinkage** covariance estimation (`sklearn.covariance.LedoitWolf`), which shrinks the sample covariance toward an identity-scaled target:
+  $$\hat{\Sigma}_{\text{shrink}} = (1 - \lambda) \hat{\Sigma} + \lambda \mu_{\text{trace}} I$$
+  where $\lambda \in [0, 1]$ is analytically selected to minimize the mean squared error of the covariance estimator.
+
+#### 3. Limitations of Mahalanobis Distance & Prediction Entropy:
+- **Multivariate Gaussianity Assumption**: Mahalanobis distance strictly assumes that feature vectors follow a multivariate Gaussian distribution. For discrete, skewed, or multimodal clinical features (e.g., categorical chest pain `cp` or binary fasting sugar `fbs`), this assumption is violated. Thus, Mahalanobis distance is computed primarily on standardized continuous predictors (`age`, `trestbps`, `chol`, `thalach`, `oldpeak`).
+- **Overconfidence of Prediction Entropy**: Prediction entropy $H(\hat{p}) = - \sum_{c} \hat{p}_c \log_2 \hat{p}_c$ is derived from model output probabilities. However, uncalibrated deep models or unregularized boosting trees can output highly confident, low-entropy predictions even for inputs far outside the training manifold. Prediction entropy must therefore be treated as an auxiliary diagnostic, never a standalone OOD detector.
+
+#### 4. Empirical OOD Evaluation on Shifted Data:
+Rather than relying solely on theoretical thresholds, the OOD detector will be evaluated empirically by testing its ability to distinguish:
+1. In-distribution held-out Cleveland test cases;
+2. Natural distribution shifts provided by the external hospital cohorts (e.g., Switzerland with severe inpatient spectrum bias and Long Beach VA with older veteran demographics);
+3. Synthetic perturbed vectors representing physiologically implausible or extreme values (e.g., blood pressure $> 260\text{ mmHg}$, cholesterol $> 700\text{ mg/dL}$).
+

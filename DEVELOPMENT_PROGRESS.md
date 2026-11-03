@@ -1,9 +1,9 @@
 # HeartGuard AI: Development Progress & Project Ledger
 
-**Current Status**: Week 1 Complete  
+**Current Status**: Week 1 Complete (Post-Scientific Audit)  
 **Current Milestone**: Milestone 1 — Research Foundation, Literature Verification, System Design & Architecture  
 **Developer Commitment**: 6–8 hours/week (1 flexible working day per week)  
-**Last Updated**: November 2026 (End of Week 1 Execution)
+**Last Updated**: November 2026 (Scientific Audit Applied)
 
 ---
 
@@ -29,7 +29,7 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 | Task ID | Description | Status | Verification Artifact |
 | :--- | :--- | :--- | :--- |
 | **TASK 1** | Inspect workspace and establish clean project root | **COMPLETED** | Repository inspected; clean root confirmed |
-| **TASK 2** | Research and verify 10–15 peer-reviewed academic papers | **COMPLETED** | 19 papers independently verified via PubMed / DOIs |
+| **TASK 2** | Research and verify peer-reviewed academic papers | **COMPLETED** | 20 papers independently verified via PubMed / DOIs |
 | **TASK 3** | Create Literature Review and Comparative Matrix | **COMPLETED** | `LITERATURE_REVIEW.md`, `LITERATURE_REVIEW_MATRIX.md` |
 | **TASK 4** | Establish evidence-backed research gap across 5 areas | **COMPLETED** | `RESEARCH_GAP.md` |
 | **TASK 5** | Finalize formal research problem statement | **COMPLETED** | `RESEARCH_OBJECTIVES.md` |
@@ -48,32 +48,35 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 ## 3. Decisions Made (Architectural & Scientific)
 
 1. **Dual-Pipeline Architectural Isolation**:
-   - *Decision*: Strictly isolate Experiment Pipeline A (Diagnostic CAD classification on UCI multicenter collection) from Experiment Pipeline B (Prognostic 10-year incident CHD risk on Framingham cohort).
+   - *Decision*: Strictly isolate Experiment Pipeline A (Diagnostic CAD classification on UCI multicenter collection) from Experiment Pipeline B (Prognostic 10-year incident CHD risk on Framingham educational cohort).
    - *Rationale*: Merging or cross-mapping these datasets creates an invalid hybrid task conflating cross-sectional angiographic stenosis with longitudinal prospective event incidence.
-2. **Modular Monolith over Microservices**:
-   - *Decision*: Build a clean modular monolith backend using FastAPI, Pydantic, and SQLAlchemy within a single unified containerized environment.
-   - *Rationale*: Eliminates unnecessary network serialization overhead and distributed transaction complexity while preserving strict internal boundaries.
-3. **TRIPOD Guidelines as Scientific Anchor**:
-   - *Decision*: Follow the 22-item TRIPOD checklist across all model development and validation reporting.
-   - *Rationale*: Ensures publication-grade reporting transparency and guarantees high academic credibility during viva defense.
-4. **Comprehensive Evaluation Metric Standard**:
-   - *Decision*: Bar classification accuracy from being the primary model selection criterion. Models will be selected using ROC-AUC, PR-AUC, Sensitivity at fixed Specificity, and Brier calibration score.
-   - *Rationale*: Mitigates deceptive performance claims caused by class imbalance and miscalibrated probabilities.
-5. **Non-Causal Interpretability Disclaimer**:
-   - *Decision*: Every SHAP visualization in the user interface and API response must include an explicit disclaimer stating that feature attributions represent algorithmic correlations, not clinical causality.
-   - *Rationale*: Adheres to high-stakes decision recommendations (Rudin, 2019) and prevents clinician misinterpretation.
+2. **Cleveland-Only Model Derivation & Frozen Cross-Dataset Testing**:
+   - *Decision*: All model development, feature selection, hyperparameter tuning, calibrator fitting, and threshold selection will be executed exclusively on Cleveland. External datasets (Hungary, Switzerland, Long Beach VA) will be strictly frozen test sets evaluated zero-shot.
+   - *Rationale*: Prevents information leakage and artificial inflation of external validation performance.
+3. **Statlog Status Classified as Pending Verification**:
+   - *Decision*: Do not claim Statlog records are exact duplicates of Cleveland cases. Catalog official UCI description (modified 270-case numerical variant) and test exact duplicate overlap programmatically in Week 2 via row-hash matching.
+4. **Framingham Educational Provenance Distinction**:
+   - *Decision*: Clearly distinguish the 4,240-row teaching CSV (BioLINCC / teaching collections) from the full multi-generational NHLBI cohort, documenting educational usage rights and discrete tabular scope.
+5. **TRIPOD and TRIPOD+AI Standards**:
+   - *Decision*: Follow the 2015 TRIPOD statement and its 2024 machine learning expansion TRIPOD+AI ([REF-01b]) for transparent reporting across preprocessing, hyperparameter search, calibration, and subgroup performance.
+6. **OOD Detection with Ledoit-Wolf Shrinkage & Documented Limitations**:
+   - *Decision*: Use regularized Ledoit-Wolf shrinkage covariance on continuous features to prevent singular matrix inversion, and document the limitations of assuming multivariate Gaussianity and entropy overconfidence on shifted data.
+7. **Validation on Small Sample Size ($N=303$)**:
+   - *Decision*: Use Repeated Stratified $K$-Fold Cross-Validation with empirical bootstrap confidence intervals rather than noisy nested CV, explicitly documenting small sample uncertainty.
+8. **ECG Scope Boundary**:
+   - *Decision*: ECG is strictly limited to discrete tabular clinical features (`restecg`, `oldpeak`, `slope`). Waveform signal processing or file uploads are out of scope and deferred until after Week 2.
 
 ---
 
 ## 4. Academic Research Verification Status
 
-19 peer-reviewed papers have been verified with complete bibliographic details, DOIs, and access statuses:
-- **Clinical Prediction Standards**: Collins et al. (2015, *BMJ* [REF-01]), Steyerberg & Vergouwe (2014, *Eur Heart J* [REF-02]).
+20 peer-reviewed papers have been verified with complete bibliographic details, DOIs, and access statuses:
+- **Clinical Prediction Standards**: Collins et al. (2015, *BMJ* [REF-01]), Collins et al. (2024, *BMJ* [REF-01b] TRIPOD+AI), Steyerberg & Vergouwe (2014, *Eur Heart J* [REF-02]).
 - **Benchmark Datasets**: Detrano et al. (1989, *Am J Cardiol* [REF-03]), Wilson et al. (1998, *Circulation* [REF-04]).
 - **Generalization & Validation**: Siontis et al. (2015, *J Clin Epidemiol* [REF-05]), Christodoulou et al. (2019, *J Clin Epidemiol* [REF-06]), Weng et al. (2017, *PLOS ONE* [REF-07]), Alaa et al. (2019, *PLOS ONE* [REF-08]).
 - **Probability Calibration**: Van Calster et al. (2016, *J Clin Epidemiol* [REF-09]), Van Calster et al. (2019, *BMC Med* [REF-10]).
 - **Explainable AI (SHAP)**: Lundberg & Lee (2017, *NeurIPS* [REF-11]), Lundberg et al. (2018, *Nature Biomed Eng* [REF-12]), Rudin (2019, *Nature Mach Intell* [REF-13]), Ward et al. (2020, *npj Digit Med* [REF-14]).
-- **Fairness & Demographics**: Chen et al. (2021, *Annu Rev Biomed Data Sci* [REF-15]), Rajkomar et al. (2018, *Annals Intern Med* [REF-16]), Woodward (2019, *Int J Environ Res Pub Health* [REF-17]).
+- **Fairness & Demographics**: Chen et al. (2021, *Annu Rev Biomed Data Sci* [REF-15]), Rajkomar et al. (2018, *Annals Intern Med* [REF-16]), Woodward (2019, *Int J Env Res Pub Health* [REF-17]).
 - **Uncertainty & OOD Detection**: Ovadia et al. (2019, *NeurIPS* [REF-18]), Lee et al. (2018, *NeurIPS* [REF-19]).
 
 *Verification Summary: 100% verified. Zero unverified or fabricated citations present.*
@@ -84,29 +87,40 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 - **UCI Heart Disease Collection (Cleveland, Hungarian, Long Beach, Switzerland)**:
   - Official UCI repository verified (Dataset ID: 45).
-  - Four sub-cohort files documented; feature schema mapped; missingness patterns characterized.
-  - Ready for ingestion and programmatic cleaning in Week 2.
+  - Four sub-cohort files documented; distinct missingness mechanisms, class distributions, and sample sizes documented separately.
+  - Frozen Cleveland-only model derivation strategy established.
 - **Statlog Heart Disease (Dataset ID: 145)**:
-  - Repository verified; confirmed to be a derivative of Cleveland complete cases.
-  - Marked for row-hashing duplicate verification in Week 2.
-- **Framingham Heart Study (4,240-row Educational Subset)**:
-  - 10-year incident hard CHD target verified; 15 features mapped; severe class imbalance ($\sim 15\%$ event prevalence) documented.
-  - Isolated into Pipeline B.
+  - Official UCI description documented (270 records, 13 numerical attributes).
+  - Row-hash programmatic duplicate matching scheduled for Week 2.
+- **Framingham Heart Study Educational Subset**:
+  - Educational 4,240-row teaching CSV distinguished from full NHLBI study.
+  - 10-year incident hard CHD target verified; isolated into Pipeline B.
 
 ---
 
-## 6. Current Issues and Blockers
+## 6. Current Issues, Scientific Audit Corrections & Outstanding Questions
 
-- **Zero Current Blockers**: All Week 1 research foundation and specification tasks completed successfully.
-- **Identified Challenges for Week 2**:
-  - Substantial missingness in the European and Long Beach UCI files (`chol` recorded as 0 in Hungary and Switzerland; `ca` and `thal` absent in $\sim 90\%$ of Hungarian records).
-  - Handling strategy: Implement a harmonized core feature subset for cross-dataset evaluation that avoids leaking labels or imputing non-random missingness unsafely.
+### Audit Corrections Applied (Week 1 Scientific Audit):
+1. **Statlog Provenance**: Marked exact duplication as a hypothesis pending Week 2 programmatic row-hash verification; documented official UCI description (270 instances, modified numeric version).
+2. **Cross-Dataset Validation Protocol**: Specified Cleveland-only model development, preprocessing, calibrator fitting, and threshold selection; froze all parameters before zero-shot testing on external sites (Hungary, Switzerland, Long Beach). External data is never used for tuning.
+3. **Dataset Compatibility**: Documented features, targets, missingness, and prevalence separately per site. Justified why forcing identical features across all sites is clinically and statistically inappropriate.
+4. **Framingham Provenance**: Clearly distinguished the 4,240-row educational teaching CSV (BioLINCC / teaching archives) from the original multi-generational Framingham Heart Study cohort.
+5. **Literature Accuracy & Qualified Fairness**: Verified exact publication details and qualified demographic fairness claims (mathematical impossibility of simultaneous parity under unequal prevalence). Added TRIPOD+AI (2024).
+6. **OOD Methodology**: Documented limitations of Mahalanobis distance (Gaussian assumption) and prediction entropy; added regularized Ledoit-Wolf shrinkage covariance.
+7. **Validation Methodology on Small Datasets**: Evaluated statistical instability of nested CV on $N=303$; adopted Repeated Stratified CV with bootstrap confidence intervals and documented uncertainty.
+8. **Reporting Standards**: Incorporated TRIPOD+AI ([REF-01b]) alongside TRIPOD (2015).
+9. **ECG Scope Boundary**: Formally restricted ECG data to discrete tabular features (`restecg`, `oldpeak`, `slope`); excluded waveform and signal processing.
+
+### Outstanding Scientific Questions for Week 2:
+- **Q1 (Statlog Duplication Concordance)**: Exactly how many of Statlog's 270 rows match Cleveland's 303 rows under feature tolerance matching, and how are missing values in Cleveland represented in Statlog?
+- **Q2 (Non-Random Missingness Handling)**: In the Swiss dataset, cholesterol is recorded as 0 across all 123 rows (clinical omission, not true zero cholesterol). When evaluating the frozen Cleveland model zero-shot, how sensitive is model discrimination to imputing Cleveland's training median versus dropping cholesterol from the core bedside feature set?
+- **Q3 (OOD Threshold Tuning)**: Does a 99th percentile $\chi^2$ cutoff on continuous features produce acceptable false-alarm rates on held-out Cleveland validation folds, or does it require empirical thresholding based on the natural distribution shift seen in Hungarian data?
 
 ---
 
 ## 7. Week 1 Acceptance Criteria Checklist
 
-- [x] At least 10–15 relevant papers researched and verified (19 verified).
+- [x] At least 10–15 relevant papers researched and verified (20 verified).
 - [x] Literature review matrix created (`LITERATURE_REVIEW_MATRIX.md`).
 - [x] Research gap is evidence-backed and cautiously worded (`RESEARCH_GAP.md`).
 - [x] Research objectives (RO1–RO6) and questions (RQ1–RQ6) documented (`RESEARCH_OBJECTIVES.md`).
@@ -123,12 +137,12 @@ Milestone 10: Week 10 [PLANNED]  - Final B.Tech Major Thesis, Conference Paper D
 
 ---
 
-## 8. Next Session Plan (Week 2 Kickoff)
+## 8. Next Session Plan (Revised Week 2 Plan)
 
 When Week 2 begins, the agent and developer will execute:
-1. Create directory structure: `data/raw/`, `data/processed/`, `src/pipelines/`, `notebooks/`.
-2. Programmatically download and ingest the UCI 4-center raw datasets and Framingham CSV.
-3. Perform exact duplicate-row hashing between Statlog Heart and Cleveland dataset.
-4. Conduct automated Exploratory Data Analysis (EDA) scripts computing distributions, skewness, correlations, and missing value maps.
-5. Author scikit-learn custom preprocessing transformers enforcing strict fold-level imputation and scaling isolation.
-6. Verify anti-leakage test assertions on sample splits.
+1. Ingest raw datasets into `data/raw/` (UCI Cleveland, Hungarian, Long Beach, Switzerland; Statlog; Framingham educational CSV).
+2. Execute programmatic row-hash matching script between Statlog and Cleveland to resolve Question Q1.
+3. Conduct automated Exploratory Data Analysis (EDA) scripts computing distributions, skewness, missingness maps, and correlation heatmaps per site.
+4. Formulate the two feature configurations (13-feature Full Diagnostic Set vs. 10-feature Core Bedside Set) with statistical justification.
+5. Author scikit-learn custom preprocessing transformers (`src/pipelines/preprocessors.py`) strictly isolating fold-level imputation and scaling.
+6. Verify anti-leakage test assertions on mock splits.

@@ -9,6 +9,8 @@
 
 ## 1. Entity-Relationship Overview
 
+// hi! I am aryan
+
 HeartGuard AI employs a normalized relational schema designed to support user authentication, patient profile management, historical prediction auditing, model evaluation benchmarks, and dataset provenance tracking.
 
 ```mermaid
